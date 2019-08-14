@@ -21,7 +21,7 @@ if [ ! -d $project_path ]; then
     exit 1
 fi
 
-../../sync_win_code.sh
+./sync_win_code.sh
 
 cd $project_path
 
