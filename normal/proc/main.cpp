@@ -16,21 +16,23 @@ void test_fork() {
     int iTest = 0;
     printf("begin fork\n");
 
-    pid_t iPid = fork();  // fork return twice, so..
-    if (0 == iPid) {
-        // child
-        printf("fork child! child pid = %d, test num = %d\n", getpid(),
-               --iTest);
-    } else if (iPid > 0) {
-        // parent
-        printf("fork parent! parent pid = %d, test num = %d\n", getpid(),
-               ++iTest);
-    } else {
-        printf("fork failed!\n");
-        return;
+    for (int i = 0; i < 2; i++) {
+        pid_t iPid = fork();  // fork return twice, so..
+        if (0 == iPid) {
+            // printf("child, pid: %d, test num: %d\n", getpid(), --iTest);
+            return;
+        } else if (iPid > 0) {
+            // printf("parent, pid = %d, test num: %d\n", getpid(), ++iTest);
+        } else {
+            // printf("fork failed!\n");
+            return;
+        }
+
+        printf("test index %d\n", i);
     }
 
-    printf("end fork, test num = %d\n", iTest);
+    printf("end fork, pid: %d, test num: %d\n", getpid(), iTest);
+    sleep(2);
 }
 
 #define N 2
@@ -41,7 +43,7 @@ void test_waitpid() {
 
     for (i = 0; i < N; i++) {
         if ((pid[i] = fork()) == 0) {
-            printf("exit from child pid = %d\n", getpid());
+            printf("exit from child pid: %d\n", getpid());
             exit(100 + i);
         }
     }
@@ -66,18 +68,8 @@ void test_waitpid() {
     exit(0);
 }
 
-void test() {
-    char acColor[] = "blue1";
-    const char* pcColor = "blue1";
-    std::cout << strlen(pcColor) << std::endl;
-    std::cout << strlen(acColor) << std::endl;
-    std::cout << sizeof(pcColor) << std::endl;
-    std::cout << sizeof(acColor) << std::endl;
-}
-
 int main() {
-    // test_fork();
+    test_fork();
     // test_waitpid();
-    test();
     return 0;
 }
