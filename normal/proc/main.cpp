@@ -10,29 +10,29 @@
 《深入理解计算机系统》 第二部分 - 8.4 异常流控制
 fork 函数会返回两次，第一次在父进程中返回， pid > 0， 第二次在子进程中返回 pid
 == 0
+fork 子进程会拷贝父进程数据，可以从变量的变化中理解逻辑。
 */
 
 void test_fork() {
     int iTest = 0;
-    printf("begin fork\n");
+    printf("begin...\n");
 
     for (int i = 0; i < 2; i++) {
         pid_t iPid = fork();  // fork return twice, so..
         if (0 == iPid) {
-            // printf("child, pid: %d, test num: %d\n", getpid(), --iTest);
+            printf("pid: %d, child, test num: %d\n", getpid(), --iTest);
             return;
         } else if (iPid > 0) {
-            // printf("parent, pid = %d, test num: %d\n", getpid(), ++iTest);
+            printf("pid = %d, parent, test num: %d\n", getpid(), ++iTest);
         } else {
-            // printf("fork failed!\n");
+            printf("failed!\n");
             return;
         }
 
-        printf("test index %d\n", i);
+        // printf("pid = %d, test index %d\n", getpid(), i);
     }
 
-    printf("end fork, pid: %d, test num: %d\n", getpid(), iTest);
-    sleep(2);
+    printf("pid: %d, end..., test num: %d\n", getpid(), iTest);
 }
 
 #define N 2
