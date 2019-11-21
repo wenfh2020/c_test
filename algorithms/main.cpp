@@ -1,86 +1,117 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
-void PrintArray(int szArray[], int iStart, int iEnd) {
-    for (int i = iStart; i <= iEnd; i++) {
-        printf("%d, ", szArray[i]);
+int g_iLevel = 0;
+const int g_array_len = 40;
+
+void print_array(int array[], int start, int end) {
+    printf("size:%d --> ", end - start + 1);
+    for (int i = start; i <= end; i++) {
+        printf("%d, ", array[i]);
     }
     printf("\n");
 }
 
+int Partition(int array[], int start, int end) {
+    int low = start - 1;
+    int high = low + 1;
+    int key = array[end];
+    printf("<<<<<<<<<<<\n");
+    printf("level:%d, key:(%d)%d, start:%d, end:%d\n", ++g_iLevel, end, key,
+           start, end);
+    print_array(array, start, end);
+
+    for (; high < end; high++) {
+        if (array[high] <= key) {
+            low++;
+            if (high > low) {
+                printf("swap item, key:%d, low:(%d)%d, high:(%d)%d\n", key, low,
+                       array[low], high, array[high]);
+                int temp = array[low];
+                array[low] = array[high];
+                array[high] = temp;
+                print_array(array, start, end);
+            }
+        }
+    }
+
+    printf("low:%d, high:%d\n", low, high);
+
+    // 如果是有序数组，就可能出现，左边都是最小的，置换就有问题。
+    int partition = low + 1;
+    if (array[partition] > key) {
+        printf("swap key:key:%d, low:(%d)%d, end:(%d)%d\n", key, partition,
+               array[partition], end, array[end]);
+        int temp = array[partition];
+        array[partition] = array[end];
+        array[end] = temp;
+        print_array(array, start, end);
+    }
+
+    print_array(array, start, end);
+    printf("-------\npartition:(%d)%d\n", partition, array[partition]);
+    return partition;
+}
+
+void qsort_end(int array[], int start, int end) {
+    if (start < 0 || end <= 0 || start >= end) {
+        return;
+    }
+    int partition = Partition(array, start, end);
+    qsort_end(array, start, partition - 1);
+    qsort_end(array, partition + 1, end);
+}
+
 // 左边比 key 大的要置换到右边，右边比左边小的要置换到左边。
-void QuickSort(int szArray[], int iStart, int iEnd) {
-    if (iStart >= iEnd) {
+void qsort_mid(int array[], int start, int end) {
+    if (start >= end) {
         return;
     }
 
-    int iHigh = iEnd;
-    int iLow = iStart;
-    int iKey = szArray[(unsigned int)(iStart + iEnd) / 2];
+    int high = end;
+    int low = start;
+    int key = array[(unsigned int)(start + end) / 2];
 
-    while (iLow < iHigh) {
-        // 左边向右查找，查找比 key 大的数值
-        while (szArray[iLow] < iKey && iLow < iEnd) {
-            iLow++;
+    while (low < high) {
+        // 左边向右查找，如果发现比 key 大的，或者没有找到符合前面条件的
+        while (array[low] < key && low < end) {
+            low++;
         }
 
-        // 右边向左查找，查找比 key 小的数值
-        while (szArray[iHigh] > iKey && iHigh > iStart) {
-            iHigh--;
+        // 右边向左查找，如果发现比 key 小的，或者没有找到符合前面条件的
+        while (array[high] > key && high > start) {
+            high--;
         }
 
-        if (iLow <= iHigh) {
-            int iTemp = szArray[iLow];
-            szArray[iLow] = szArray[iHigh];
-            szArray[iHigh] = iTemp;
-            iLow++;
-            iHigh--;
+        if (low <= high) {
+            int temp = array[low];
+            array[low] = array[high];
+            array[high] = temp;
+            low++;
+            high--;
         }
 
-        printf("key: %d, left: (%d:%d), right: (%d:%d)  <--> ", iKey, iLow,
-               szArray[iLow], iHigh, szArray[iHigh]);
-        PrintArray(szArray, iStart, iEnd);
+        printf("key:%d, low:(%d:%d), high:(%d:%d)  <--> ", key, low, array[low],
+               high, array[high]);
+        print_array(array, start, end);
     }
 
-    printf("<------------------\n");
+    printf("%d ------------------\n", ++g_iLevel);
 
-    QuickSort(szArray, iStart, iHigh);
-    QuickSort(szArray, iLow, iEnd);
-}
-
-int BinarySearch(int szArray[], int iSize, int iFindValue) {
-    if (iSize <= 0) {
-        return -1;
-    }
-
-    int iLow = 0;
-    int iHigh = iSize - 1;
-
-    while (iLow <= iHigh) {
-        int iKey = ((unsigned int)(iLow + iHigh)) / 2;
-        if (iFindValue > szArray[iKey]) {
-            iLow = iKey + 1;
-        } else if (iFindValue < szArray[iKey]) {
-            iHigh = iKey - 1;
-        } else {
-            return iKey;
-        }
-    }
-
-    return -1;
+    qsort_mid(array, start, high);
+    qsort_mid(array, low, end);
 }
 
 int main() {
-    int szArray[] = {10,  9,     8,   11,    6,    5,     16,    12,
-                     1,   2,     -1,  2000,  18,   101,   10002, 1078,
-                     77,  98,    34,  78787, 3432, 87978, 123,   56,
-                     890, 34657, 678, 345,   7533, 10002, 11};
-    PrintArray(szArray, 0, sizeof(szArray) / sizeof(int) - 1);
-    QuickSort(szArray, 0, sizeof(szArray) / sizeof(int) - 1);
-    PrintArray(szArray, 0, sizeof(szArray) / sizeof(int) - 1);
-
-    // int iFindValue = -1;
-    // printf("binary search(%d) result %d\n", iFindValue,
-    //        BinarySearch(szArray, sizeof(szArray) / sizeof(int), iFindValue));
+    srand((unsigned)time(NULL));
+    // srand(10000);
+    int* array = new int[g_array_len];
+    for (int i = 0; i < g_array_len; i++) array[i] = rand() % 10000;
+    // qsort_mid(array, 0, g_array_len-1);
+    qsort_end(array, 0, g_array_len - 1);
+    print_array(array, 0, g_array_len - 1);
+    delete[] array;
     return 0;
 }
