@@ -1,16 +1,17 @@
 // sort test/wenfh2020/2019-11-23
-// g++ -g main.cpp -o main;./main
+// g++ -g main.cpp -o main; ./main sort numbers
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <iostream>
 
 //#define _LOG
 int g_iLevel = 0;
-const int g_array_len = 11;
 const int g_buf_size = 1024 * 1024;
+using namespace std;
 
 int log(const char* args, ...) {
     int ret = 0;
@@ -28,6 +29,19 @@ int log(const char* args, ...) {
     return ret;
 }
 
+class Cost {
+   public:
+    Cost() { m_begin_time = clock(); }
+    ~Cost() {
+        clock_t end_time = clock();
+        double cost = (double)(end_time - m_begin_time) / CLOCKS_PER_SEC;
+        printf("cost time: %lf secs\n", cost);
+    }
+
+   private:
+    clock_t m_begin_time;
+};
+
 void print_array(int array[], int start, int end, const char* str = "") {
     strlen(str) == 0 ? log("size:%d --> ", end - start + 1)
                      : log("%s, size:%d --> ", str, end - start + 1);
@@ -35,6 +49,15 @@ void print_array(int array[], int start, int end, const char* str = "") {
         log("%d, ", array[i]);
     }
     log("\n");
+}
+
+bool check(int array[], int len) {
+    for (int i = 0; i < len - 1; i++) {
+        if (array[i] > array[i + 1]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 int Partition(int array[], int start, int end) {
@@ -125,15 +148,6 @@ void qsort_mid(int array[], int start, int end) {
     qsort_mid(array, low, end);
 }
 
-bool check_sort_result(int array[], int len) {
-    for (int i = 0; i < len - 1; i++) {
-        if (array[i] > array[i + 1]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 void insert_sort(int array[], int len) {
     for (int i = 1; i < len; i++) {
         int j = i;
@@ -147,50 +161,38 @@ void insert_sort(int array[], int len) {
         }
         if (is_change) {
             log("%d ------------\n", i);
-            print_array(array, 0, g_array_len - 1);
+            print_array(array, 0, len - 1);
         }
     }
 }
 
-void merge_sort(int array[], int start, int end) {
+void merge_sort(int array[], int start, int mid, int end) {
     log("--------\n");
     log("start:%d, end:%d\n", start, end);
     print_array(array, start, end, "merge_sort begin");
-    // copy array to temp
-    int len = end - start + 1;
-    int* temp = (int*)malloc(sizeof(int) * len);
-    for (int i = 0; i < len; i++) {
-        temp[i] = array[start + i];
-    }
-    print_array(temp, 0, len - 1, "temp");
-    int mid = (len + 1) / 2;
-    int low = 0;
-    int high = mid;
+
+    int k = 0;
+    int low = start;
+    int high = mid + 1;
+    int* temp = (int*)malloc(sizeof(int) * (end - start + 1));
 
     log("array[%d]:%d, array[%d]:%d\n", start, array[start], end, array[end]);
 
-    int k = start;
-    while (low < mid && high < len) {
-        if (temp[low] < temp[high]) {
-            log("1- k-array[%d]:%d, low-temp[%d]:%d, high-temp[%d]:%d\n", k,
-                array[k], low, temp[low], high, temp[high]);
-            array[k++] = temp[low++];
-        } else {
-            array[k++] = temp[high++];
-            log("2- k-array[%d]:%d, low-temp[%d]:%d, high-temp[%d]:%d\n", k,
-                array[k], low, temp[low], high, temp[high]);
-        }
-
+    // fill small data to temp
+    while (low <= mid && high <= end) {
+        (array[low] < array[high]) ? temp[k++] = array[low++]
+                                   : temp[k++] = array[high++];
         print_array(array, start, end, "merge_sort change");
     }
 
-    while (high < len) {
-        array[k++] = temp[high++];
-    }
+    // if fill low, then fill high.
+    while (high <= end) temp[k++] = array[high++];
 
-    while (low < mid) {
-        array[k++] = temp[low++];
-    }
+    // if fill high, then fill low.
+    while (low <= mid) temp[k++] = array[low++];
+
+    // copy temp to array
+    for (int i = 0; i < k; i++) array[start + i] = temp[i];
 
     free(temp);
     print_array(array, start, end, "merge_sort end");
@@ -204,31 +206,42 @@ void merge(int array[], int start, int end) {
     int mid = (start + end) / 2;
     merge(array, start, mid);
     merge(array, mid + 1, end);
-    merge_sort(array, start, end);
+    merge_sort(array, start, mid, end);
 }
 
-int main() {
-    srand((unsigned)time(NULL));
-    // srand(10000);
-    int* array = new int[g_array_len];
-    for (int i = 0; i < g_array_len; i++) {
-        array[i] = rand() % 10000;
+int main(int args, char** argv) {
+    if (args != 3) {
+        printf("please input arg! ./main sort numbers \n");
+        return 0;
     }
 
-    // array[0] = 4583;
-    // array[1] = 835;
-    // array[2] = 8234;
-    // array[3] = 2847;
-    // array[4] = 6555;
+    string sort(argv[1]);
+    int len = atoi(argv[2]);
 
-    // print_array(array, 0, g_array_len - 1, "start");
-    // qsort_mid(array, 0, g_array_len - 1);
-    // qsort_end(array, 0, g_array_len - 1);
-    // insert_sort(array, g_array_len);
-    merge(array, 0, g_array_len - 1);
-    check_sort_result(array, g_array_len) ? printf("sort success!\n")
-                                          : printf("sort failed!\n");
-    print_array(array, 0, g_array_len - 1, "end");
+    Cost cost;
+    srand((unsigned)time(NULL));
+    // srand(10000);
+    int* array = new int[len];
+    for (int i = 0; i < len; i++) {
+        array[i] = rand() % len;
+    }
+
+    print_array(array, 0, len - 1, "start");
+
+    if (sort == "i") {
+        insert_sort(array, len);
+    } else if (sort == "qe") {
+        qsort_end(array, 0, len - 1);
+    } else if (sort == "qm") {
+        qsort_mid(array, 0, len - 1);
+    } else if (sort == "m") {
+        merge(array, 0, len - 1);
+    } else {
+        printf("invalid sort!\n");
+    }
+
+    check(array, len) ? printf("success!\n") : printf("failed!\n");
+    print_array(array, 0, len - 1, "end");
     delete[] array;
     return 0;
 }
