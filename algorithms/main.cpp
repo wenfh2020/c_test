@@ -7,8 +7,10 @@
 #include <string.h>
 #include <time.h>
 #include <iostream>
+#include <set>
 
 //#define _LOG
+#define _ARG
 int g_iLevel = 0;
 const int g_buf_size = 1024 * 1024;
 using namespace std;
@@ -29,19 +31,6 @@ int log(const char* args, ...) {
     return ret;
 }
 
-class Cost {
-   public:
-    Cost() { m_begin_time = clock(); }
-    ~Cost() {
-        clock_t end_time = clock();
-        double cost = (double)(end_time - m_begin_time) / CLOCKS_PER_SEC;
-        printf("cost time: %lf secs\n", cost);
-    }
-
-   private:
-    clock_t m_begin_time;
-};
-
 void print_array(int array[], int start, int end, const char* str = "") {
     strlen(str) == 0 ? log("size:%d --> ", end - start + 1)
                      : log("%s, size:%d --> ", str, end - start + 1);
@@ -59,6 +48,118 @@ bool check(int array[], int len) {
     }
     return true;
 }
+
+class Cost {
+   public:
+    Cost() { m_begin_time = clock(); }
+    ~Cost() {
+        clock_t end_time = clock();
+        double cost = (double)(end_time - m_begin_time) / CLOCKS_PER_SEC;
+        printf("cost time: %lf secs\n", cost);
+    }
+
+   private:
+    clock_t m_begin_time;
+};
+
+class Heap {
+   public:
+    Heap(int array[], int len)
+        : m_array(NULL), m_data_len(len), m_data_size(0) {
+        // m_array 数组的 0 下标没有使用，所以要多申请 1 个 int 空间
+        m_array = new int[m_data_len + 1];
+        memset(m_array, 0, (m_data_len + 1) * sizeof(int));
+        for (int i = 0; i < len; i++) {
+            m_array[i + 1] = array[i];
+        }
+    }
+
+    virtual ~Heap() {
+        if (m_array != NULL) {
+            delete[] m_array;
+        }
+    }
+
+    void sort() {
+        // 建堆处理后，父结点 > 子结点
+        m_data_size = m_data_len;
+        build_max_heap(m_array, m_data_size);
+        swap(&m_array[1], &m_array[m_data_size]);
+        m_data_size--;
+
+        // 从上到下
+        while (m_data_size > 1) {
+            print_array(m_array, 1, m_data_len, "sort max_heapify begin");
+            max_heapify(m_array, 1);
+            print_array(m_array, 1, m_data_len, "sort max_heapify end");
+            swap(&m_array[1], &m_array[m_data_size]);
+            m_data_size--;
+        }
+    }
+
+    void get_data(int array[], int len) {
+        for (int i = 0; i < len && i <= m_data_len; i++) {
+            array[i] = m_array[i + 1];
+        }
+    }
+
+   protected:
+    int left(int i) { return i << 1; }
+    int right(int i) { return (i << 1) + 1; }
+    void swap(int* a, int* b) {
+        int temp = *a;
+        *a = *b;
+        *b = temp;
+    }
+
+    // 自下而上
+    void build_max_heap(int array[], int len) {
+        m_data_size = len;
+        log("build_max_heap len: %d, size: %d\n", len, m_data_size);
+        for (int i = (m_data_size / 2); i >= 1; i--) {
+            max_heapify(m_array, i);
+        }
+    }
+
+    void max_heapify(int array[], int i) {
+        int largest = i;
+        int l = left(i);
+        int r = right(i);
+
+        log("----\n");
+        log("");
+        print_array(m_array, 1, m_data_len, "max_heapify begin");
+
+        if (l <= m_data_size && array[l] > array[i]) {
+            largest = l;
+        }
+
+        if (r <= m_data_size && array[r] > array[largest]) {
+            largest = r;
+        }
+
+        log("i: %d\n"
+            "array[i]: %d\n"
+            "largest: %d, \n"
+            "array[largest]: %d\n"
+            "l: %d\n"
+            "array[l]: %d\n"
+            "r:%d\n"
+            "array[r]: %d\n",
+            i, array[i], largest, array[largest], l, array[l], r, array[r]);
+
+        if (largest != i) {
+            swap(&array[largest], &array[i]);
+            print_array(m_array, 1, m_data_len, "max_heapify end");
+            max_heapify(array, largest);
+        }
+    }
+
+   private:
+    int m_data_len;   // 数据长度
+    int m_data_size;  //有效数据 0 <= size <= len
+    int* m_array;     // 数据
+};
 
 int Partition(int array[], int start, int end) {
     int low = start - 1;
@@ -210,6 +311,7 @@ void merge(int array[], int start, int end) {
 }
 
 int main(int args, char** argv) {
+#ifdef _ARG
     if (args != 3) {
         printf("please input arg! ./main sort numbers \n");
         return 0;
@@ -218,14 +320,19 @@ int main(int args, char** argv) {
     string sort(argv[1]);
     int len = atoi(argv[2]);
 
-    Cost cost;
-    srand((unsigned)time(NULL));
     // srand(10000);
     int* array = new int[len];
     for (int i = 0; i < len; i++) {
         array[i] = rand() % len;
     }
+#else
+    int array[] = {5, 9, 10, 11, 15, 20, 2, 1, 100, 7, 1000};
+    int len = sizeof(array) / sizeof(int);
+    string sort("h");
+#endif
 
+    Cost cost;
+    srand((unsigned)time(NULL));
     print_array(array, 0, len - 1, "start");
 
     if (sort == "i") {
@@ -236,12 +343,19 @@ int main(int args, char** argv) {
         qsort_mid(array, 0, len - 1);
     } else if (sort == "m") {
         merge(array, 0, len - 1);
+    } else if (sort == "h") {
+        Heap h(array, len);
+        h.sort();
+        h.get_data(array, len);
     } else {
         printf("invalid sort!\n");
     }
 
     check(array, len) ? printf("success!\n") : printf("failed!\n");
     print_array(array, 0, len - 1, "end");
+
+#ifdef _ARG
     delete[] array;
+#endif
     return 0;
 }
