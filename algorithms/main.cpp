@@ -1,66 +1,10 @@
 // sort test/wenfh2020/2019-11-23
 // g++ -g main.cpp -o main; ./main sort numbers
-
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <iostream>
-#include <set>
+#include "common.h"
 
-//#define _LOG
 #define _ARG
 int g_iLevel = 0;
-const int g_buf_size = 1024 * 1024;
-using namespace std;
-
-int log(const char* args, ...) {
-    int ret = 0;
-
-#ifdef _LOG
-    va_list ap;
-    char buf[g_buf_size] = {0};
-
-    va_start(ap, args);
-    ret = vsprintf(buf, args, ap);
-    printf("%s", buf);
-    va_end(ap);
-#endif
-
-    return ret;
-}
-
-void print_array(int array[], int start, int end, const char* str = "") {
-    strlen(str) == 0 ? log("size:%d --> ", end - start + 1)
-                     : log("%s, size:%d --> ", str, end - start + 1);
-    for (int i = start; i <= end; i++) {
-        log("%d, ", array[i]);
-    }
-    log("\n");
-}
-
-bool check(int array[], int len) {
-    for (int i = 0; i < len - 1; i++) {
-        if (array[i] > array[i + 1]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-class Cost {
-   public:
-    Cost() { m_begin_time = clock(); }
-    ~Cost() {
-        clock_t end_time = clock();
-        double cost = (double)(end_time - m_begin_time) / CLOCKS_PER_SEC;
-        printf("cost time: %lf secs\n", cost);
-    }
-
-   private:
-    clock_t m_begin_time;
-};
 
 class Heap {
    public:
@@ -82,6 +26,10 @@ class Heap {
 
     void sort() {
         // 建堆处理后，父结点 > 子结点
+        if (m_data_len <= 2) {
+            return;
+        }
+
         m_data_size = m_data_len;
         build_max_heap(m_array, m_data_size);
         swap(&m_array[1], &m_array[m_data_size]);
@@ -106,11 +54,6 @@ class Heap {
    protected:
     int left(int i) { return i << 1; }
     int right(int i) { return (i << 1) + 1; }
-    void swap(int* a, int* b) {
-        int temp = *a;
-        *a = *b;
-        *b = temp;
-    }
 
     // 自下而上
     void build_max_heap(int array[], int len) {
@@ -127,8 +70,6 @@ class Heap {
         int r = right(i);
 
         log("----\n");
-        log("");
-        print_array(m_array, 1, m_data_len, "max_heapify begin");
 
         if (l <= m_data_size && array[l] > array[i]) {
             largest = l;
@@ -138,17 +79,14 @@ class Heap {
             largest = r;
         }
 
-        log("i: %d\n"
-            "array[i]: %d\n"
-            "largest: %d, \n"
-            "array[largest]: %d\n"
-            "l: %d\n"
-            "array[l]: %d\n"
-            "r:%d\n"
-            "array[r]: %d\n",
-            i, array[i], largest, array[largest], l, array[l], r, array[r]);
+        log("i: %d\narray[i]: %d\n", i, array[i]);
+        if (largest <= m_data_size)
+            log("largest: %d\narray[largest]: %d\n", largest, array[largest]);
+        if (l <= m_data_size) log("l: %d\narray[l]: %d\n", l, array[l]);
+        if (r <= m_data_size) log("r: %d\narray[r]: %d\n", r, array[r]);
 
         if (largest != i) {
+            print_array(m_array, 1, m_data_len, "max_heapify begin");
             swap(&array[largest], &array[i]);
             print_array(m_array, 1, m_data_len, "max_heapify end");
             max_heapify(array, largest);
