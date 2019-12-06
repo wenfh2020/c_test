@@ -1,100 +1,13 @@
+#ifndef _SORT_H_
+#define _SORT_H_
+
 #include <iostream>
 #include "common.h"
 
 int g_iLevel = 0;
 
-class HeapSort {
-   public:
-    HeapSort(int array[], int len)
-        : m_array(NULL), m_data_len(len), m_data_size(0) {
-        // m_array 数组的 0 下标没有使用，所以要多申请 1 个 int 空间
-        m_array = new int[m_data_len + 1];
-        memset(m_array, 0, (m_data_len + 1) * sizeof(int));
-        for (int i = 0; i < len; i++) {
-            m_array[i + 1] = array[i];
-        }
-    }
-
-    virtual ~HeapSort() {
-        if (m_array != NULL) {
-            delete[] m_array;
-        }
-    }
-
-    void sort() {
-        if (m_data_len <= 2) {
-            return;
-        }
-
-        // 建堆处理后，父结点 > 子结点
-        m_data_size = m_data_len;
-        build_max_heap(m_array, m_data_size);
-        swap(&m_array[1], &m_array[m_data_size]);
-        m_data_size--;
-
-        // 从上到下（父节点到子树结点）
-        while (m_data_size > 1) {
-            print_array(m_array, 1, m_data_len, "sort max_heapify begin");
-            max_heapify(m_array, 1);
-            print_array(m_array, 1, m_data_len, "sort max_heapify end");
-            swap(&m_array[1], &m_array[m_data_size]);
-            m_data_size--;
-        }
-    }
-
-    void get_data(int array[], int len) {
-        for (int i = 0; i < len && i <= m_data_len; i++) {
-            array[i] = m_array[i + 1];
-        }
-    }
-
-   protected:
-    int left(int i) { return i << 1; }
-    int right(int i) { return (i << 1) + 1; }
-
-    // 自下而上
-    void build_max_heap(int array[], int len) {
-        m_data_size = len;
-        log("build_max_heap len: %d, size: %d\n", len, m_data_size);
-        for (int i = (m_data_size / 2); i >= 1; i--) {
-            max_heapify(m_array, i);
-        }
-    }
-
-    void max_heapify(int array[], int i) {
-        int largest = i;
-        int l = left(i);
-        int r = right(i);
-
-        log("----\n");
-
-        if (l <= m_data_size && array[l] > array[i]) {
-            largest = l;
-        }
-
-        if (r <= m_data_size && array[r] > array[largest]) {
-            largest = r;
-        }
-
-        log("i: %d\narray[i]: %d\n", i, array[i]);
-        if (largest <= m_data_size)
-            log("largest: %d\narray[largest]: %d\n", largest, array[largest]);
-        if (l <= m_data_size) log("l: %d\narray[l]: %d\n", l, array[l]);
-        if (r <= m_data_size) log("r: %d\narray[r]: %d\n", r, array[r]);
-
-        if (largest != i) {
-            print_array(m_array, 1, m_data_len, "max_heapify begin");
-            swap(&array[largest], &array[i]);
-            print_array(m_array, 1, m_data_len, "max_heapify end");
-            max_heapify(array, largest);
-        }
-    }
-
-   private:
-    int m_data_len;   // 数据长度
-    int m_data_size;  //有效数据 0 <= size <= len
-    int* m_array;     // 数据
-};
+// quick sort
+////////////////////////////////////////////////////////////
 
 int Partition(int array[], int start, int end) {
     int low = start - 1;
@@ -184,6 +97,9 @@ void qsort_mid(int array[], int start, int end) {
     qsort_mid(array, low, end);
 }
 
+// insert sort
+////////////////////////////////////////////////////////////
+
 void insert_sort(int array[], int len) {
     for (int i = 1; i < len; i++) {
         int j = i;
@@ -201,6 +117,9 @@ void insert_sort(int array[], int len) {
         }
     }
 }
+
+// merge sort
+////////////////////////////////////////////////////////////
 
 void merge_sort(int array[], int start, int mid, int end) {
     log("--------\n");
@@ -244,3 +163,5 @@ void merge(int array[], int start, int end) {
     merge(array, mid + 1, end);
     merge_sort(array, start, mid, end);
 }
+
+#endif  //_SORT_H_

@@ -1,6 +1,7 @@
 // sort test/wenfh2020/2019-11-23
 // g++ -g main.cpp -o main; ./main sort numbers
 
+#include "heap_sort.h"
 #include "sort.h"
 
 #define _ARG
@@ -40,7 +41,7 @@ int main(int args, char** argv) {
         merge(array, 0, len - 1);
     } else if (sort == "h") {
         HeapSort hs(array, len);
-        hs.sort();
+        hs.heap_sort();
         hs.get_data(array, len);
     } else {
         printf("invalid sort!\n");

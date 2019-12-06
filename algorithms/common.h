@@ -1,9 +1,13 @@
+#ifndef _COMMAND_H_
+#define _COMMAND_H_
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <iostream>
 using namespace std;
 
-//#define _LOG
+#define _LOG
 const int g_buf_size = 1024 * 1024;
 
 int log(const char* args, ...) {
@@ -58,3 +62,5 @@ void swap(int* a, int* b) {
     *a = *b;
     *b = temp;
 }
+
+#endif  //_COMMAND_H_
