@@ -1,0 +1,17 @@
+CXX = g++
+CPPFLAGS = -g -O0 -Wall
+
+TARGETS = main
+
+CPP_SRCS = $(foreach dir, ., $(wildcard $(dir)/*.cpp))
+OBJS = $(patsubst %.cpp, %.o, $(CPP_SRCS))
+
+$(TARGETS): $(OBJS)
+	$(CXX) $(CPPFLAGS) -o $@ $(OBJS)
+
+%.o: %.cpp
+	$(CXX) $(CPPFLAGS) $< -c -o $@
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(TARGETS)
