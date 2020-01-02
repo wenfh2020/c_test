@@ -13,6 +13,8 @@
 
 #define MEM_SIZE (1024 * 1024 * 1024 / 4)
 
+volatile bool is_child_end = false;
+
 // 修改测试数据
 void format_data(int* array, size_t len) {
     if (array) {
@@ -58,7 +60,7 @@ class alloc_data {
 
 alloc_data g_data;
 
-void child_handler(int signal_num) {
+void sig_child_handler(int /*signal_num*/) {
     pid_t pid;
     int status;
     int old_errno = errno;
@@ -74,27 +76,25 @@ void child_handler(int signal_num) {
 
     if (errno != ECHILD) {
         printf("waitpid error\n");
+        is_child_end = true;
         return;
     }
 
     errno = old_errno;
-    printf("errno: %d, exit end\n", errno);
+    printf("sig_child_handler end, errno: %d\n", errno);
+    is_child_end = true;
 }
 
 void do_some_thing() {
-    int i = 0;
-    for (int k = 0; k < 100000000; k++) {
-        i = i + 2;
-        if (k % 1000 == 0) {
-            usleep(100);
-        }
+    while (!is_child_end) {
+        usleep(100);
     }
 }
 
 void signal_set() {
     struct sigaction sigchild_action;
     memset(&sigchild_action, 0, sizeof(sigchild_action));
-    sigchild_action.sa_handler = &child_handler;
+    sigchild_action.sa_handler = &sig_child_handler;
     sigaction(SIGCHLD, &sigchild_action, NULL);
 }
 
