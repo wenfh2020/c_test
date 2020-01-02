@@ -104,10 +104,10 @@ int main() {
     if (0 == pid) {
         printf("child pid: %d, data ptr: %#lx\n", getpid(),
                (unsigned long)&g_data);
-        sleep(10);  // update data before
+        sleep(5);  // update data before
         printf("child pid: %d, reset data:\n", getpid());
         g_data.reset();
-        sleep(10);  // update data later
+        sleep(5);  // update data later
         exit(0);
     } else if (pid > 0) {
         printf("parent pid: %d, data ptr: %#lx\n", getpid(),
