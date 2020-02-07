@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// #define DEBUG1
+#define DEBUG1
 
 typedef unsigned char u_char;
 

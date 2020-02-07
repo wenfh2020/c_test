@@ -16,7 +16,6 @@ class A {
         m_strData = p;
         std::cout << this << " A::A " << m_strData.c_str() << std::endl;
     }
-    ~A() { std::cout << this << " A::~A " << m_strData.c_str() << std::endl; }
 
    public:
     const char* GetData() { return m_strData.c_str(); }
