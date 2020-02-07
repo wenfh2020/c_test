@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define DEBUG1
 
@@ -8,25 +9,91 @@ typedef unsigned char u_char;
 
 #ifdef DEBUG1
 
-#define ALIGNMENT_4 4
-#define ALIGNMENT_8 8
-#define ALIGNMENT_13 13
-#define ALIGNMENT_16 16
 #define ngx_align_ptr(p, a) \
     (u_char *)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
 
-int main(int argc, char *argv[]) {
-    u_char *p = (u_char *)malloc(1024);
-    u_char *p1 = p + 2;
-    u_char *p2 = ngx_align_ptr(p1, ALIGNMENT_4);
-    u_char *p3 = p2 + 3;
-    u_char *p4 = ngx_align_ptr(p3, ALIGNMENT_8);
-    u_char *p5 = ngx_align_ptr(p + 11, ALIGNMENT_16);
-    printf("p:  %p\np1: %p\np2: %p\np3: %p\np4: %p\np5: %p\n", p, p1, p2, p3,
-           p4, p5);
-    printf("p2: %lu, p4: %lu, p5: %lu\n", (uintptr_t)p2 % ALIGNMENT_4,
-           (uintptr_t)p4 % ALIGNMENT_8, (uintptr_t)p5 % ALIGNMENT_16);
+// 创建一个大内存块，在上面分配空间，然后填充数据。
+// 对齐和不对齐的处理。
+
+char *i2bin(unsigned long long v, char *buf, int len) {
+    if (0 == v) {
+        memcpy(buf, "0", 2);
+        return buf;
+    }
+
+    char *dst = buf + len - 1;
+    *dst = '\0';
+
+    while (v) {
+        if (dst - buf <= 0) return NULL;
+        *--dst = (v & 1) + '0';
+        v = v >> 1;
+    }
+    memcpy(buf, dst, buf + len - dst);
+    return buf;
+}
+
+void test_align_mod() {
+    int i;
+    int z[] = {1, 2, 4, 8, 16, 32, 64};
+    int len = sizeof(z) / sizeof(int);
+    char bin[128];
+    u_char *o, *n, *r;
+
+    srand(time(NULL));
+
+    o = (u_char *)malloc(1024 * sizeof(u_char));
+    printf("p: %p\n", o);
+
+    for (i = 0; i < len; i++) {
+        n = o + rand() % 64;
+        r = ngx_align_ptr(n, z[i]);
+        printf("a: %2d, n: %14p, r: %14p, rbin: %s, mod: %lu\n", z[i], n, r,
+               i2bin((unsigned long long)r, bin, 128), (uintptr_t)r % z[i]);
+    }
+    free(o);
+}
+
+#define BLOCK_SIZE 1024 * 1024 * 1024
+
+void test_mem_alloc(int is_align) {
+    char *p, *last, *end;
+    int size, count;
+
+    count = 0;
+    srand(time(NULL));
+
+    size = BLOCK_SIZE * sizeof(char);
+    p = (char *)malloc(size);
+    last = p;
+    end = p + size;
+
+    while (end > last) {
+        if (is_align) {
+            last = (char *)ngx_align_ptr(last, 16);
+        }
+        size = rand() % (16 - 1) + 1;
+        if ((last + size) > end) {
+            break;
+        }
+        memset(last, (char)(rand() % 255), size - 1);
+        last[size - 1] = '\0';
+        // printf("size: %d, data: %s, len: %lu\n", size, last, strlen(last));
+        last += size;
+        count++;
+    }
+
+    printf("count: %d\n", count);
+
     free(p);
+}
+
+int main(int argc, char *argv[]) {
+    int is_align = (argc == 2 && !strcasecmp(argv[1], "1")) ? 1 : 0;
+
+    // test_align_mod();
+    test_mem_alloc(is_align);
+    return 0;
 }
 
 #else
