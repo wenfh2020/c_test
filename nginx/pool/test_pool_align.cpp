@@ -1,3 +1,7 @@
+/* 内存对齐测试
+ * wenfahua/2020-02-08
+ * gcc -g test_pool_align.cpp -o align && ./align 1  */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
