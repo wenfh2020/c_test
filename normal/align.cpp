@@ -105,9 +105,9 @@ typedef struct {
  * 对齐地址和不对齐地址分别保存在不同的数组 aligns 和 unaligns，
  * 再对数组里指向的数据地址进行读写。 */
 void test_mem_alloc(int argc, char** argv) {
-    u_char *p, *last, *end, *old;
+    u_char *p, *last, *end;
     int size, alignment, i, j;
-    long long t;
+    long long start, stop;
     char buf[256];
     ngx_str_t *s, *aligns, *ualigns;
 
@@ -124,7 +124,6 @@ void test_mem_alloc(int argc, char** argv) {
 
     i = 0;
     srand(time(NULL));
-    t = mstime();
 
     last += 1;
 
@@ -148,9 +147,7 @@ void test_mem_alloc(int argc, char** argv) {
         }
     }
 
-    old = last;
     i = 0;
-    t = mstime();
 
     // 对齐
     while (end > last) {
@@ -174,54 +171,51 @@ void test_mem_alloc(int argc, char** argv) {
     // 对数组保存的指针进行读写操作。
 
     // 写
-    t = mstime();
-
+    start = mstime();
     for (i = 0; i < UN_ALIGN_COUNT; i++) {
         s = &ualigns[i];
         memset(s->data, (char)(rand() % 255), s->len - 1);
         s->data[s->len - 1] = '\0';
         // printf("unalign: %p, data: %s\n", s->data, s->data);
     }
+    stop = mstime();
 
     printf("ualign write, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, mstime() - t);
+           i, stop - start);
 
-    i = 0;
-    t = mstime();
-
+    start = mstime();
     for (i = 0; i < ALIGN_COUNT; i++) {
         s = &aligns[i];
         memset(s->data, (char)(rand() % 255), s->len - 1);
         s->data[s->len - 1] = '\0';
     }
+    stop = mstime();
 
     printf("align  write, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, mstime() - t);
+           i, stop - start);
 
     // 读
-    i = 0;
-    t = mstime();
-
+    start = mstime();
     for (i = 0; i < UN_ALIGN_COUNT; i++) {
         s = &ualigns[i];
         strncpy(buf, (char*)s->data, s->len);
         // printf("unalign: %p, len: %lu\n", s->data, s->len);
     }
+    stop = mstime();
 
     printf("ualign read, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, mstime() - t);
+           i, stop - start);
 
-    i = 0;
-    t = mstime();
-
+    start = mstime();
     for (i = 0; i < ALIGN_COUNT; i++) {
         s = &aligns[i];
         strncpy(buf, (char*)s->data, s->len);
         // printf("align: %p, len: %lu\n", s->data, s->len);
     }
+    stop = mstime();
 
     printf("align  read, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, mstime() - t);
+           i, stop - start);
 
     free(aligns);
     free(ualigns);
