@@ -1,3 +1,7 @@
+/* 内存对齐测试
+/* wenfahua/2020-02-08
+/* gcc -g -O0 align.cpp -o align && ./align 64 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -138,18 +142,18 @@ void test_mem_alloc(int argc, char** argv) {
 
 // 测试 ~((uintptr_t)a - 1))
 void test_a() {
-    int i;
+    int i, len;
     uintptr_t l;
     char* p;
     char test[128];
-    int z[] = {1, 2, 4, 8, 16, 32, 64};
-    int len = sizeof(z) / sizeof(int);
+
+    int aligns[] = {1, 2, 4, 8, 16, 32, 64};
+    len = sizeof(aligns) / sizeof(int);
 
     for (i = 0; i < len; i++) {
-        l = ~((uintptr_t)z[i] - 1);
+        l = ~((uintptr_t)aligns[i] - 1);
         p = i2bin(l, test, 128);
-        printf("a: %2d,  d: %s\n", z[i], p);
-        test[0] = '\0';
+        printf("a: %2d,  d: %s\n", aligns[i], p);
     }
 }
 
