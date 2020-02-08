@@ -1,31 +1,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
 #define DEBUG1
 
 typedef unsigned char u_char;
+typedef unsigned long uintptr_t;
 
 #ifdef DEBUG1
 
 #define ngx_align_ptr(p, a) \
-    (u_char *)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
+    (u_char*)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
 
-// 创建一个大内存块，在上面分配空间，然后填充数据。
-// 对齐和不对齐的处理。
+// 内存存储地址，
 
-char *i2bin(unsigned long long v, char *buf, int len) {
+char* i2bin(unsigned long long v, char* buf, int len) {
     if (0 == v) {
         memcpy(buf, "0", 2);
         return buf;
     }
 
-    char *dst = buf + len - 1;
+    char* dst = buf + len - 1;
     *dst = '\0';
 
     while (v) {
-        if (dst - buf <= 0) return NULL;
+        if (dst - buf <= 0) {
+            return NULL;
+        }
         *--dst = (v & 1) + '0';
         v = v >> 1;
     }
@@ -42,7 +46,7 @@ void test_align_mod() {
 
     srand(time(NULL));
 
-    o = (u_char *)malloc(1024 * sizeof(u_char));
+    o = (u_char*)malloc(1024 * sizeof(u_char));
     printf("p: %p\n", o);
 
     for (i = 0; i < len; i++) {
@@ -54,25 +58,101 @@ void test_align_mod() {
     free(o);
 }
 
-#define BLOCK_SIZE 1024 * 1024 * 1024
+// 大块内存分配
+// 对齐数据数组
+// 不对齐数据数组。
+#define ALIGN_SIZE (64 * 1024 * 1024)
+#define UN_ALIGN_SIZE ALIGN_SIZE
 
-void test_mem_alloc(int is_align) {
-    char *p, *last, *end;
-    int size, count;
+#define BLOCK_SIZE (1024 * 1024 * 1024)
+
+void test_mem_alloc2() {
+    char *p, *end;
+    char **a, **ua;
+    int size, i, j, ret;
+    clock_t time;
+    double cost;
+
+    a = (char**)malloc(ALIGN_SIZE * sizeof(char*));
+    ua = (char**)malloc(UN_ALIGN_SIZE * sizeof(char*));
+
+    size = BLOCK_SIZE * sizeof(char);
+    p = (char*)malloc(size);
+    end = p + size;
+
+    i = j = 0;
+
+    while (p < end) {
+        *p++ = (char)(rand() % 255);
+
+        if ((uintptr_t)p % 4 == 0) {
+            if (i < ALIGN_SIZE) {
+                a[i++] = p;
+                ua[j++] = p + 3;
+            }
+        }
+    }
+
+    printf("align index: %d, not align index: %d\n", i, j);
+
+    ret = 0;
+    time = clock();
+
+    // 计算两个数组运算的时间
+    for (i = 0; i < ALIGN_SIZE; i++) {
+        ret += (int)(*a[i]);
+        // printf("%d, align ptr: %p, data: %d\n", i, a[i], (int)(*a[i]));
+    }
+
+    cost = (double)(clock() - time) / CLOCKS_PER_SEC;
+    printf("align cost time: %lf secs\n", cost);
+
+    ret = 0;
+    time = clock();
+
+    for (j = 0; j < UN_ALIGN_SIZE; j++) {
+        ret += (int)(*ua[j]);
+        // printf("not align ptr: %p, data: %d\n", ua[j], (int)(*ua[j]));
+    }
+    cost = (double)(clock() - time) / CLOCKS_PER_SEC;
+    printf("not align cost time: %lf secs\n", cost);
+
+    free(a);
+    free(ua);
+}
+
+#define RAND_AREA 128
+#define ALIGN_COUNT 1024 * 1024 * 4
+#define UN_ALIGN_COUNT ALIGN_COUNT
+
+long long mstime(void) {
+    struct timeval tv;
+    long long mst;
+
+    gettimeofday(&tv, NULL);
+    mst = ((long long)tv.tv_sec) * 1000;
+    mst += tv.tv_usec / 1000;
+    return mst;
+}
+
+void test_mem_alloc(int argc, char** argv) {
+    char *p, *last, *end, *old;
+    int size, count, alignment;
+    long long t;
 
     count = 0;
+    alignment = (argc == 2) ? atoi(argv[1]) : 4;
     srand(time(NULL));
 
     size = BLOCK_SIZE * sizeof(char);
-    p = (char *)malloc(size);
+    p = (char*)malloc(size);
     last = p;
     end = p + size;
 
+    t = mstime();
+    // 不对齐
     while (end > last) {
-        if (is_align) {
-            last = (char *)ngx_align_ptr(last, 16);
-        }
-        size = rand() % (16 - 1) + 1;
+        size = rand() % (RAND_AREA - 1) + 1;
         if ((last + size) > end) {
             break;
         }
@@ -80,19 +160,48 @@ void test_mem_alloc(int is_align) {
         last[size - 1] = '\0';
         // printf("size: %d, data: %s, len: %lu\n", size, last, strlen(last));
         last += size;
-        count++;
+        if (++count >= ALIGN_COUNT) {
+            break;
+        }
     }
 
-    printf("count: %d\n", count);
+    printf("alignment: %d, unaligns：%d, mem size：%lu, cost time: %lld ms\n",
+           alignment, count, last - p, mstime() - t);
+
+    count = 0;
+    t = mstime();
+    old = last;
+
+    // 对齐
+    while (end > last) {
+        last = (char*)ngx_align_ptr(last, alignment);
+        size = rand() % (RAND_AREA - 1) + 1;
+        if ((last + size) > end) {
+            break;
+        }
+        memset(last, (char)(rand() % 255), size - 1);
+        last[size - 1] = '\0';
+        // printf("size: %d, data: %s, len: %lu\n", size, last, strlen(last));
+        last += size;
+        if (++count >= UN_ALIGN_COUNT) {
+            break;
+        }
+    }
+
+    printf("alignment: %d, aligns：%d,   mem size：%lu, cost time: %lld ms\n",
+           alignment, count, last - old, mstime() - t);
+
+    // printf("count: %d\n", count);
 
     free(p);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     int is_align = (argc == 2 && !strcasecmp(argv[1], "1")) ? 1 : 0;
 
-    // test_align_mod();
-    test_mem_alloc(is_align);
+    test_align_mod();
+    // test_mem_alloc(argc, argv);
+    // test_mem_alloc2();
     return 0;
 }
 
@@ -111,7 +220,9 @@ int sdsll2str(char* s, long long value) {
         *p++ = '0' + (v % 2);  // 2
         v /= 2;                // 2
     } while (v);
-    if (value < 0) *p++ = '-';
+    if (value < 0) {
+        *p++ = '-';
+    }
 
     /* Compute length and add null term. */
     l = p - s;
@@ -130,7 +241,7 @@ int sdsll2str(char* s, long long value) {
 }
 
 #define ngx_align_ptr(p, a) \
-    (u_char *)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
+    (u_char*)(((uintptr_t)(p) + ((uintptr_t)a - 1)) & ~((uintptr_t)a - 1))
 
 char* i2bin(unsigned long long v, char* buf, int len) {
     if (0 == v) {
@@ -142,7 +253,9 @@ char* i2bin(unsigned long long v, char* buf, int len) {
     *dst = '\0';
 
     while (v) {
-        if (dst - buf <= 0) return NULL;
+        if (dst - buf <= 0) {
+            return NULL;
+        }
         *--dst = (v & 1) + '0';
         v = v >> 1;
     }
