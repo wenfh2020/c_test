@@ -95,7 +95,7 @@ void test_align_mod() {
 
 // 申请两块内存，一块内存是对齐处理，另外一块不对齐。
 
-typedef double type_t;
+typedef short type_t;
 
 void test_align(u_char* p, int size, int alignment, int is_align,
                 int is_write) {
@@ -108,7 +108,7 @@ void test_align(u_char* p, int size, int alignment, int is_align,
 
     end = p + size;
     p = (u_char*)ngx_align_ptr(p, alignment);
-    p += is_align ? 0 : 1;  // 地址
+    p += is_align ? 0 : 1;  //制造不对齐地址
 
     start = mstime();
     // 防止系统优化。现在从两端进行交替读写。
@@ -122,6 +122,7 @@ void test_align(u_char* p, int size, int alignment, int is_align,
             p += sizeof(type_t);
         } else {
             end -= sizeof(type_t);
+            // printf("p: %p\n", end);
             if (is_write) {
                 *((type_t*)end) = (type_t)rand();
             } else {
