@@ -90,59 +90,132 @@ void test_align_mod() {
     free(p);
 }
 
-#define RAND_AREA 128
-#define ALIGN_COUNT (1024 * 1024 * 4)
-// #define ALIGN_COUNT 16
+#define RAND_AREA 64
+#define ALIGN_COUNT (1024 * 1024 * 2)
 #define UN_ALIGN_COUNT ALIGN_COUNT
 #define BLOCK_SIZE (1024 * 1024 * 1024)
 
+typedef int type_t;
+
 typedef struct {
     size_t len;
-    u_char* data;
-} ngx_str_t;
+    type_t* data;
+} stu_t;
 
+typedef struct {
+    stu_t* t;
+    size_t len;
+} array_t;
+
+// 对数组保存的指针进行读写操作。
+void calc_result(array_t* aligns, array_t* ualigns, int alignment) {
+    stu_t* s;
+    int i, j, count;
+    long long start, stop;
+    type_t temp;
+
+    srand(time(NULL));
+
+    // 写
+    start = mstime();
+    for (i = 0, count = 0; i < ualigns->len; i++) {
+        s = &ualigns->t[i];
+        for (j = 0; j < s->len; j++) {
+            s->data[j] = (type_t)rand();
+            count++;
+        }
+    }
+    stop = mstime();
+
+    printf(
+        "ualign write, alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
+        alignment, count, stop - start, (float)(stop - start) / count);
+
+    start = mstime();
+    for (i = 0, count = 0; i < aligns->len; i++) {
+        s = &aligns->t[i];
+        for (j = 0; j < s->len; j++) {
+            s->data[j] = (type_t)rand();
+            count++;
+        }
+    }
+    stop = mstime();
+
+    printf(
+        "align  write, alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
+        alignment, count, stop - start, (float)(stop - start) / count);
+
+    // 读
+    start = mstime();
+    for (i = 0, count = 0; i < ualigns->len; i++) {
+        s = &ualigns->t[i];
+        for (j = 0; j < s->len; j++) {
+            temp = s->data[j];
+            count++;
+            // printf("read, ua, p: %p\n", &s->data[j]);
+        }
+    }
+    stop = mstime();
+
+    printf(
+        "ualign read,  alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
+        alignment, count, stop - start, (float)(stop - start) / count);
+
+    start = mstime();
+    for (i = 0, count = 0; i < aligns->len; i++) {
+        s = &aligns->t[i];
+        for (j = 0; j < s->len; j++) {
+            temp = s->data[j];
+            count++;
+        }
+    }
+    stop = mstime();
+
+    printf(
+        "align  read,  alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
+        alignment, count, stop - start, (float)(stop - start) / count);
+}
+
+// 因为 char 是 1 字节，所以都是对齐的.填充整型数据进行测试。
 /* 在一块连续内存上，分配小块（一个范围内随机大小）内存进行数据填充，
  * 对齐地址和不对齐地址分别保存在不同的数组 aligns 和 unaligns，
  * 再对数组里指向的数据地址进行读写。 */
 void test_mem_alloc(int argc, char** argv) {
     u_char *p, *last, *end;
-    int size, alignment, i, j;
-    long long start, stop;
-    char buf[256];
-    ngx_str_t *s, *aligns, *ualigns;
+    int alignment, i;
+    size_t size;
+    array_t aligns, ualigns;
 
+    srand(time(NULL));
     alignment = (argc == 2) ? atoi(argv[1]) : 4;
 
-    size = BLOCK_SIZE * sizeof(char);
-    p = (u_char*)malloc(size);
+    p = (u_char*)malloc(BLOCK_SIZE);
+    if (p == NULL) {
+        printf("alloc mem failed, size: %d\n", BLOCK_SIZE);
+        return;
+    }
     last = p;
-    end = last + size;
+    end = last + BLOCK_SIZE;
 
-    // 保存对齐和不对齐的数据指针
-    aligns = (ngx_str_t*)malloc(ALIGN_COUNT * sizeof(ngx_str_t));
-    ualigns = (ngx_str_t*)malloc(UN_ALIGN_COUNT * sizeof(ngx_str_t));
+    aligns.t = (stu_t*)malloc(ALIGN_COUNT * sizeof(stu_t));
+    ualigns.t = (stu_t*)malloc(UN_ALIGN_COUNT * sizeof(stu_t));
 
     i = 0;
-    srand(time(NULL));
-
-    last += 1;
 
     // 不对齐
-    while (end > last) {
-        // 取不对齐的地址
-        size = rand() % (RAND_AREA - 1) + 1;
-        if ((uintptr_t(last + size) % 2) == 0) {
-            continue;
-        }
+    while (last < end) {
+        last = (u_char*)ngx_align_ptr(last, alignment) + 1;
+        size = (rand() % (RAND_AREA - 1) + 1) * sizeof(type_t);
         if ((last + size) > end) {
             break;
         }
 
-        ualigns[i].len = size;
-        ualigns[i].data = last;
+        ualigns.t[i].len = size / sizeof(type_t);
+        ualigns.t[i].data = (type_t*)last;
+        ualigns.len = ++i;
 
         last += size;
-        if (++i >= UN_ALIGN_COUNT) {
+        if (i >= UN_ALIGN_COUNT) {
             break;
         }
     }
@@ -150,75 +223,29 @@ void test_mem_alloc(int argc, char** argv) {
     i = 0;
 
     // 对齐
-    while (end > last) {
+    while (last < end) {
         last = (u_char*)ngx_align_ptr(last, alignment);
-        size = rand() % (RAND_AREA - 1) + 1;
+        size = (rand() % (RAND_AREA - 1) + 1) * sizeof(type_t);
         if ((last + size) > end) {
             break;
         }
 
-        aligns[i].len = size;
-        aligns[i].data = last;
+        aligns.t[i].len = size / sizeof(type_t);
+        aligns.t[i].data = (type_t*)last;
+        aligns.len = ++i;
 
         last += size;
-
-        if (++i >= ALIGN_COUNT) {
+        if (i >= ALIGN_COUNT) {
             break;
         }
     }
 
-    // ------------------
-    // 对数组保存的指针进行读写操作。
+    printf("uarray len: %lu, array len: %lu\n", ualigns.len, aligns.len);
 
-    // 写
-    start = mstime();
-    for (i = 0; i < UN_ALIGN_COUNT; i++) {
-        s = &ualigns[i];
-        memset(s->data, (char)(rand() % 255), s->len - 1);
-        s->data[s->len - 1] = '\0';
-        // printf("unalign: %p, data: %s\n", s->data, s->data);
-    }
-    stop = mstime();
+    calc_result(&aligns, &ualigns, alignment);
 
-    printf("ualign write, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, stop - start);
-
-    start = mstime();
-    for (i = 0; i < ALIGN_COUNT; i++) {
-        s = &aligns[i];
-        memset(s->data, (char)(rand() % 255), s->len - 1);
-        s->data[s->len - 1] = '\0';
-    }
-    stop = mstime();
-
-    printf("align  write, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, stop - start);
-
-    // 读
-    start = mstime();
-    for (i = 0; i < UN_ALIGN_COUNT; i++) {
-        s = &ualigns[i];
-        strncpy(buf, (char*)s->data, s->len);
-        // printf("unalign: %p, len: %lu\n", s->data, s->len);
-    }
-    stop = mstime();
-
-    printf("ualign read, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, stop - start);
-
-    start = mstime();
-    for (i = 0; i < ALIGN_COUNT; i++) {
-        s = &aligns[i];
-        strncpy(buf, (char*)s->data, s->len);
-        // printf("align: %p, len: %lu\n", s->data, s->len);
-    }
-    stop = mstime();
-
-    printf("align  read, alignment: %d, count: %d, cost: %lld ms\n", alignment,
-           i, stop - start);
-
-    free(aligns);
-    free(ualigns);
+    free(aligns.t);
+    free(ualigns.t);
     free(p);
 }
 
