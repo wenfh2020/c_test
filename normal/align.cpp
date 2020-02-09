@@ -90,168 +90,88 @@ void test_align_mod() {
     free(p);
 }
 
-#define RAND_AREA 64
-#define ALIGN_COUNT (1024 * 1024 * 2)
+#define ALIGN_COUNT (1024 * 1024 * 64)
 #define UN_ALIGN_COUNT ALIGN_COUNT
-#define BLOCK_SIZE (1024 * 1024 * 1024)
 
-typedef int type_t;
+// 申请两块内存，一块内存是对齐处理，另外一块不对齐。
 
-typedef struct {
-    size_t len;
-    type_t* data;
-} stu_t;
+typedef double type_t;
 
-typedef struct {
-    stu_t* t;
-    size_t len;
-} array_t;
-
-// 对数组保存的指针进行读写操作。
-void calc_result(array_t* aligns, array_t* ualigns, int alignment) {
-    stu_t* s;
-    int i, j, count;
+void test_align(u_char* p, int size, int alignment, int is_align,
+                int is_write) {
+    u_char* end;
     long long start, stop;
-    type_t temp;
+    int count, temp;
 
+    count = 0;
     srand(time(NULL));
 
-    // 写
+    end = p + size;
+    p = (u_char*)ngx_align_ptr(p, alignment);
+    p += is_align ? 0 : 1;  // 地址
+
     start = mstime();
-    for (i = 0, count = 0; i < ualigns->len; i++) {
-        s = &ualigns->t[i];
-        for (j = 0; j < s->len; j++) {
-            s->data[j] = (type_t)rand();
-            count++;
+    // 防止系统优化。现在从两端进行交替读写。
+    while (p + sizeof(type_t) < end - sizeof(type_t)) {
+        if (count % 2 == 0) {
+            if (is_write) {
+                *((type_t*)p) = (type_t)rand();
+            } else {
+                temp = *((type_t*)p);
+            }
+            p += sizeof(type_t);
+        } else {
+            end -= sizeof(type_t);
+            if (is_write) {
+                *((type_t*)end) = (type_t)rand();
+            } else {
+                temp = *((type_t*)end);
+            }
         }
+
+        count++;
     }
     stop = mstime();
 
     printf(
-        "ualign write, alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
-        alignment, count, stop - start, (float)(stop - start) / count);
-
-    start = mstime();
-    for (i = 0, count = 0; i < aligns->len; i++) {
-        s = &aligns->t[i];
-        for (j = 0; j < s->len; j++) {
-            s->data[j] = (type_t)rand();
-            count++;
-        }
-    }
-    stop = mstime();
-
-    printf(
-        "align  write, alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
-        alignment, count, stop - start, (float)(stop - start) / count);
-
-    // 读
-    start = mstime();
-    for (i = 0, count = 0; i < ualigns->len; i++) {
-        s = &ualigns->t[i];
-        for (j = 0; j < s->len; j++) {
-            temp = s->data[j];
-            count++;
-            // printf("read, ua, p: %p\n", &s->data[j]);
-        }
-    }
-    stop = mstime();
-
-    printf(
-        "ualign read,  alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
-        alignment, count, stop - start, (float)(stop - start) / count);
-
-    start = mstime();
-    for (i = 0, count = 0; i < aligns->len; i++) {
-        s = &aligns->t[i];
-        for (j = 0; j < s->len; j++) {
-            temp = s->data[j];
-            count++;
-        }
-    }
-    stop = mstime();
-
-    printf(
-        "align  read,  alignment: %d, count: %d, cost: %lld ms, avg: %lf ms\n",
-        alignment, count, stop - start, (float)(stop - start) / count);
+        "is_align: %d, is_write: %d, alignment: %d, count: %d, cost: %lld ms,"
+        " avg: %lf ms\n",
+        is_align, is_write, alignment, count, stop - start,
+        (float)(stop - start) / count);
 }
 
-// 因为 char 是 1 字节，所以都是对齐的.填充整型数据进行测试。
-/* 在一块连续内存上，分配小块（一个范围内随机大小）内存进行数据填充，
- * 对齐地址和不对齐地址分别保存在不同的数组 aligns 和 unaligns，
- * 再对数组里指向的数据地址进行读写。 */
-void test_mem_alloc(int argc, char** argv) {
-    u_char *p, *last, *end;
-    int alignment, i;
-    size_t size;
-    array_t aligns, ualigns;
+void test_alloc_mem(int argc, char** argv, int alignment) {
+    u_char *aligns, *ualigns;
+    int alen, ualen;
+    int is_align;
 
-    srand(time(NULL));
-    alignment = (argc == 2) ? atoi(argv[1]) : 4;
+    is_align = (argc == 3 && !strcasecmp(argv[2], "1")) ? 1 : 0;
 
-    p = (u_char*)malloc(BLOCK_SIZE);
-    if (p == NULL) {
-        printf("alloc mem failed, size: %d\n", BLOCK_SIZE);
-        return;
-    }
-    last = p;
-    end = last + BLOCK_SIZE;
+    alen = ALIGN_COUNT * sizeof(type_t);
+    aligns = (u_char*)malloc(alen);
+    ualen = UN_ALIGN_COUNT * sizeof(type_t);
+    ualigns = (u_char*)malloc(ualen);
 
-    aligns.t = (stu_t*)malloc(ALIGN_COUNT * sizeof(stu_t));
-    ualigns.t = (stu_t*)malloc(UN_ALIGN_COUNT * sizeof(stu_t));
+    // test_align(aligns, alen, alignment, 1, 0);
+    // test_align(ualigns, ualen, alignment, 0, 0);
 
-    i = 0;
-
-    // 不对齐
-    while (last < end) {
-        last = (u_char*)ngx_align_ptr(last, alignment) + 1;
-        size = (rand() % (RAND_AREA - 1) + 1) * sizeof(type_t);
-        if ((last + size) > end) {
-            break;
-        }
-
-        ualigns.t[i].len = size / sizeof(type_t);
-        ualigns.t[i].data = (type_t*)last;
-        ualigns.len = ++i;
-
-        last += size;
-        if (i >= UN_ALIGN_COUNT) {
-            break;
-        }
+    if (is_align) {
+        test_align(aligns, alen, alignment, 1, 1);
+        test_align(aligns, alen, alignment, 1, 0);
+    } else {
+        test_align(ualigns, ualen, alignment, 0, 1);
+        test_align(ualigns, ualen, alignment, 0, 0);
     }
 
-    i = 0;
-
-    // 对齐
-    while (last < end) {
-        last = (u_char*)ngx_align_ptr(last, alignment);
-        size = (rand() % (RAND_AREA - 1) + 1) * sizeof(type_t);
-        if ((last + size) > end) {
-            break;
-        }
-
-        aligns.t[i].len = size / sizeof(type_t);
-        aligns.t[i].data = (type_t*)last;
-        aligns.len = ++i;
-
-        last += size;
-        if (i >= ALIGN_COUNT) {
-            break;
-        }
-    }
-
-    printf("uarray len: %lu, array len: %lu\n", ualigns.len, aligns.len);
-
-    calc_result(&aligns, &ualigns, alignment);
-
-    free(aligns.t);
-    free(ualigns.t);
-    free(p);
+    free(aligns);
+    free(ualigns);
+    return;
 }
 
 int main(int argc, char* argv[]) {
+    int alignment = (argc == 2) ? atoi(argv[1]) : 4;
     // test_a();
     // test_align_mod();
-    test_mem_alloc(argc, argv);
+    test_alloc_mem(argc, argv, alignment);
     return 0;
 }
