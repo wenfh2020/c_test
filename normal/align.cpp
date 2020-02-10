@@ -90,18 +90,22 @@ void test_align_mod() {
     free(p);
 }
 
+#define ALIGN 1
+#define UN_ALIGN 0
+#define READ 0
+#define WRITE 1
 #define ALIGN_COUNT (1024 * 1024 * 64)
 #define UN_ALIGN_COUNT ALIGN_COUNT
 
+typedef int type_t;
+
 // 申请两块内存，一块内存是对齐处理，另外一块不对齐。
-
-typedef short type_t;
-
 void test_align(u_char* p, int size, int alignment, int is_align,
                 int is_write) {
     u_char* end;
     long long start, stop;
-    int count, temp;
+    type_t *wirte, read;
+    int count;
 
     count = 0;
     srand(time(NULL));
@@ -111,24 +115,14 @@ void test_align(u_char* p, int size, int alignment, int is_align,
     p += is_align ? 0 : 1;  //制造不对齐地址
 
     start = mstime();
-    // 防止系统优化。现在从两端进行交替读写。
-    while (p + sizeof(type_t) < end - sizeof(type_t)) {
-        if (count % 2 == 0) {
-            if (is_write) {
-                *((type_t*)p) = (type_t)rand();
-            } else {
-                temp = *((type_t*)p);
-            }
-            p += sizeof(type_t);
+    while (p + sizeof(type_t) < end) {
+        if (is_write) {
+            wirte = (type_t*)p;
+            *wirte = (type_t)rand();
         } else {
-            end -= sizeof(type_t);
-            // printf("p: %p\n", end);
-            if (is_write) {
-                *((type_t*)end) = (type_t)rand();
-            } else {
-                temp = *((type_t*)end);
-            }
+            read = (type_t)rand();
         }
+        p += sizeof(type_t);
 
         count++;
     }
@@ -141,27 +135,21 @@ void test_align(u_char* p, int size, int alignment, int is_align,
         (float)(stop - start) / count);
 }
 
-void test_alloc_mem(int argc, char** argv, int alignment) {
+void test_alloc_mem(int argc, char** argv, int alignment, int is_align) {
     u_char *aligns, *ualigns;
     int alen, ualen;
-    int is_align;
-
-    is_align = (argc == 3 && !strcasecmp(argv[2], "1")) ? 1 : 0;
 
     alen = ALIGN_COUNT * sizeof(type_t);
     aligns = (u_char*)malloc(alen);
     ualen = UN_ALIGN_COUNT * sizeof(type_t);
     ualigns = (u_char*)malloc(ualen);
 
-    // test_align(aligns, alen, alignment, 1, 0);
-    // test_align(ualigns, ualen, alignment, 0, 0);
-
     if (is_align) {
-        test_align(aligns, alen, alignment, 1, 1);
-        test_align(aligns, alen, alignment, 1, 0);
+        test_align(aligns, alen, alignment, ALIGN, WRITE);
+        test_align(aligns, alen, alignment, ALIGN, READ);
     } else {
-        test_align(ualigns, ualen, alignment, 0, 1);
-        test_align(ualigns, ualen, alignment, 0, 0);
+        test_align(ualigns, ualen, alignment, UN_ALIGN, WRITE);
+        test_align(ualigns, ualen, alignment, UN_ALIGN, READ);
     }
 
     free(aligns);
@@ -170,9 +158,12 @@ void test_alloc_mem(int argc, char** argv, int alignment) {
 }
 
 int main(int argc, char* argv[]) {
-    int alignment = (argc == 2) ? atoi(argv[1]) : 4;
+    int alignment, is_align;
+
+    alignment = (argc >= 2) ? atoi(argv[1]) : 4;
+    is_align = (argc == 3 && !strcasecmp(argv[2], "1")) ? 1 : 0;
     // test_a();
     // test_align_mod();
-    test_alloc_mem(argc, argv, alignment);
+    test_alloc_mem(argc, argv, alignment, is_align);
     return 0;
 }
