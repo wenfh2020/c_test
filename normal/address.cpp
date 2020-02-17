@@ -1,5 +1,4 @@
-/* 进程内存分布
- * wenfahua/2020-02-16 */
+/* 进程内存分布/wenfahua/2020-02-16 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,85 +30,7 @@
 堆
 栈
 堆栈的增长方向
-
 */
-
-// int bss_var;
-// int data_var0 = 1;
-// static int sint = 3;
-
-// #define HELLO "hello"
-// const char* p1 = HELLO;
-
-// void test_stack3() {
-//     double stack_var0 = 1;
-//     double stack_var1 = 2;
-//     printf("Stack3 location:\n");
-//     printf("\tInitial stack3, var0:%p\n", &stack_var0);
-//     printf("\tInitial stack3, var1:%p\n", &stack_var1);
-//     printf("_____________________________________\n");
-// }
-
-// void test_stack2() {
-//     double stack_var0 = 1;
-//     double stack_var1 = 2;
-//     printf("Stack2 location:\n");
-//     printf("\tInitial stack2, var0:%p\n", &stack_var0);
-//     printf("\tInitial stack2, var1:%p\n", &stack_var1);
-//     printf("_____________________________________\n");
-
-//     test_stack3();
-// }
-
-// void test_stack1() {
-//     int stack_var0 = 1;
-//     int stack_var1 = 2;
-//     printf("Stack1 location:\n");
-//     printf("\tInitial stack1, var0:%p\n", &stack_var0);
-//     printf("\tInitial stack1, var1:%p\n", &stack_var1);
-//     printf("_____________________________________\n");
-
-//     test_stack2();
-// }
-
-// void test_mem() {
-//     printf("Test location:\n");
-//     printf("\tAddress of test_mem(Code Segment):    %p\n", test_mem);
-//     const char* p2 = "abc";
-//     printf("\tAddress of const string(Code Segment):%p\n", p1);
-//     printf("\tAddress of const string(Code Segment):%p\n", p2);
-//     printf("_____________________________________\n");
-
-//     int stack_var0 = 2;
-//     printf("Stack location:\n");
-//     printf("\tInitial end of stack:%p\n", &stack_var0);
-//     int stack_var1 = 3;
-//     printf("\tNew end of stack:    %p\n", &stack_var1);
-//     printf("\tNew end of stack:    %p\n", &p2);
-//     printf("_____________________________________\n");
-
-//     printf("Data location:\n");
-//     printf("\tAddress of data_var0(Data Segment):%p\n", &data_var0);
-//     static int data_var1 = 4;
-//     printf("\tNew end of data_var1(Data Segment):%p\n", &data_var1);
-//     static int data_var3 = 4;
-//     printf("\tNew end of data_var3(Data Segment):%p\n", &data_var3);
-//     printf("\tNew end of data_var4(Data Segment):%p\n", &p1);
-//     printf("_____________________________________\n");
-
-//     printf("BSS location:\n");
-//     printf("\tAddress of bss_var: %p\n", &bss_var);
-//     static int bss_var1 = 0;
-//     printf("\tAddress of bss_var1:%p\n", &bss_var1);
-//     static int bss_var2 = 0;
-//     printf("\tAddress of bss_var2:%p\n", &bss_var2);
-//     printf("_____________________________________\n");
-//     printf("Heap location:\n");
-//     char* p = (char*)malloc(1024);
-//     memset(p, 'a', 1024);
-//     printf("\tAddress of head_var:%p\n", p);
-//     free(p);
-// }
 
 int global_int_not_init;
 int global_int_0 = 0;
@@ -124,16 +45,25 @@ char* global_pointer_not_init;
 const char* global_const_string_1 = "hello_1";
 const char* global_const_string_2 = "hello_2";
 
+std::string str;
 std::map<long long, std::string> g_map;
 
-#define INSERT_MAP(x) \
-    g_map.insert(std::pair<long long, std::string>((long long)(x), #x));
+#define INSERT_MAP(x)                   \
+    str = #x;                           \
+    if (str[0] == '&') str.erase(0, 1); \
+    g_map.insert(std::pair<long long, std::string>((long long)(x), str));
 
+// 测试静态变量
 void test_static();
+// 测试全局变量
 void test_global();
+// 测试堆栈
 void test_stack();
+// 测试堆
 void test_heap();
+// 测试函数源码
 void test_code();
+// 从低地址到高地址打印地址对应的变量
 void print_sort_ret();
 int main();
 
