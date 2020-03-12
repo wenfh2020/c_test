@@ -28,14 +28,9 @@ std::string cur_time() { return std::to_string(mstime() / 1000); }
 class data {
    public:
     data() {}
-    data(const data& d) {
-        m_key = d.m_key;
-        m_value = d.m_value;
-    }
-    data(const std::string& k, const std::string& v) {
-        m_key = k;
-        m_value = v;
-    }
+    data(const data& d) : m_key(d.m_key), m_value(d.m_value) {}
+    data(const std::string& key, const std::string& value)
+        : m_key(key), m_value(value) {}
 
    public:
     std::string get_key() const { return m_key; }
@@ -56,37 +51,39 @@ class lru {
         for (; itr != m_list.end(); itr++) {
             SAFE_DELETE(*itr);
         }
-
         m_list.clear();
         m_map.clear();
     }
 
     bool insert(const std::string& key, const std::string& value) {
-        if (m_map.find(key) != m_map.end()) {
+        if (key.empty() || value.empty() || (m_map.find(key) != m_map.end())) {
             return false;
         }
 
-        std::cout << "insert key: " << key << " value: " << value << std::endl;
+        m_list.push_front(new data(key, value));
+        m_map[key] = m_list.begin();
 
-        data* d = new data(key, value);
-        m_list.push_front(d);
-        m_map.insert(std::pair<std::string, std::list<data*>::iterator>(
-            d->get_key(), m_list.begin()));
+        std::cout << "insert key: " << key << " value: " << value << std::endl;
         return true;
     }
 
     bool update(const std::string& key, const std::string& value) {
         data* d;
-        if (!remove(key, &d)) {
+        std::unordered_map<std::string, std::list<data*>::iterator>::iterator
+            itr;
+
+        itr = m_map.find(key);
+        if (itr == m_map.end()) {
             return false;
         }
 
-        std::cout << "update key: " << key << " value: " << value << std::endl;
-
+        d = *(itr->second);
         d->set_value(value);
+        m_list.erase(itr->second);
         m_list.push_front(d);
-        m_map.insert(std::pair<std::string, std::list<data*>::iterator>(
-            d->get_key(), m_list.begin()));
+        m_map[d->get_key()] = m_list.begin();
+
+        std::cout << "update key: " << key << " value: " << value << std::endl;
         return true;
     }
 
@@ -116,12 +113,14 @@ class lru {
 
         itr = m_list.end();
         itr--;
-        remove((*itr)->get_key(), &d);
+        d = *itr;
+
+        m_map.erase(d->get_key());
+        m_list.erase(itr);
+        SAFE_DELETE(d);
 
         std::cout << "pop: " << d->get_key() << " " << d->get_value()
                   << std::endl;
-
-        SAFE_DELETE(d);
         return true;
     }
 
@@ -145,21 +144,6 @@ class lru {
             prev = d->get_value();
         }
         std::cout << "--------" << std::endl;
-        return true;
-    }
-
-   private:
-    bool remove(const std::string& key, data** d) {
-        std::unordered_map<std::string, std::list<data*>::iterator>::iterator
-            itr;
-        itr = m_map.find(key);
-        if (itr == m_map.end()) {
-            return false;
-        }
-
-        m_map.erase(itr);
-        *d = *(itr->second);
-        m_list.erase(itr->second);
         return true;
     }
 
@@ -188,7 +172,7 @@ int main() {
         }
 
         o.check();
-        sleep(3);
+        sleep(2);
     }
     return 0;
 }
