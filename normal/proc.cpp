@@ -1,5 +1,11 @@
-// fork 测试 copy-on-write
-// wenfahua/2020-01-02
+/*
+ * project:  normal
+ * file:     proc.cpp
+ * brief:	 fork test copy-on-write
+ * author:   wenfh2020
+ * date:     2020-01-02
+ * page:     https://wenfh2020.com
+ */
 
 #include <errno.h>
 #include <signal.h>
@@ -9,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
 #include <iostream>
 
 #define MEM_SIZE (1024 * 1024 * 1024 / 4)
@@ -90,6 +97,8 @@ void do_some_thing() {
         usleep(100);
     }
 }
+
+// #define SIGCHLD 20      /* to parent on child stop or exit */
 
 void signal_set() {
     struct sigaction sigchild_action;
