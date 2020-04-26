@@ -1,12 +1,16 @@
 /* 测试内存池使用
- * wenfahua/2020-02-08
+ * wenfh2020/2020-02-08
  * gcc -g pool.cpp -o pool && ./pool   */
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __APPLE__
 #include <sys/malloc.h>
+#else
+#include <malloc.h>
+#endif
 
 typedef intptr_t ngx_int_t;
 typedef unsigned char u_char;
