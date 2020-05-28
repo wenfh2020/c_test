@@ -18,6 +18,7 @@ int main(int args, char** argv) {
     bool is_check = false;
 
     // srand(10000);
+    srand((unsigned)time(NULL));
     int* array = new int[len];
     for (int i = 0; i < len; i++) {
         array[i] = rand() % len;
@@ -29,7 +30,6 @@ int main(int args, char** argv) {
 #endif
 
     Cost cost;
-    srand((unsigned)time(NULL));
     print_array(array, 0, len - 1, "start");
 
     if (sort == "i") {
@@ -45,34 +45,34 @@ int main(int args, char** argv) {
         merge(array, 0, len - 1);
         is_check = true;
     } else if (sort == "h") {
-        HeapSort hs(array, len);
-        hs.heap_sort();
+        heap_sort hs(array, len);
+        hs.sort();
         hs.get_data(array, len);
         is_check = true;
     } else if (sort == "hm") {
         int v = 0;
-        HeapSort hs(array, len);
+        heap_sort hs(array, len);
         hs.heap_maxinum(v);
         printf("heap_maxinum data: %d\n", v);
     } else if (sort == "he") {
         // 通过 heap_extract_max
         // 取出最大堆堆顶元素后，再取剩余元素的堆顶，检查取数据后堆是否能重新平衡
         int v1 = 0, v2 = 0;
-        HeapSort hs(array, len);
+        heap_sort hs(array, len);
         hs.heap_extract_max(v1);
         hs.heap_maxinum(v2);
         printf("heap_extract_max data: %d\nheap_maxinum:%d\n", v1, v2);
     } else if (sort == "hik") {
         // 用一个最大值，替换len/2下标的数据，查看堆顶元素是否满足最大堆性质。
         int v1 = 100000, v2 = 0;
-        HeapSort hs(array, len);
+        heap_sort hs(array, len);
         hs.heap_increase_key(len / 2, v1);  //
         hs.heap_maxinum(v2);
         printf("heap_increase_key data: %d\nheap_maxinum:%d\n", v1, v2);
     } else if (sort == "hi") {
         // 通过插入方法，组成一个最大堆，获取堆顶元素查看是否满足最大堆性质。
         int v = 0;
-        HeapSort hs;
+        heap_sort hs;
         hs.reset(len);
         for (int i = 0; i < len; i++) {
             hs.max_heap_insert(array[i]);

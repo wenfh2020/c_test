@@ -13,5 +13,4 @@ $(TARGETS): $(OBJS)
 	$(CXX) $(CPPFLAGS) $< -c -o $@
 
 clean:
-	rm -f $(OBJS)
-	rm -f $(TARGETS)
+	rm -f $(OBJS) $(TARGETS)

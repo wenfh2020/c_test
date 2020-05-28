@@ -1,9 +1,9 @@
 #include "heap_sort.h"
 
-HeapSort::HeapSort()
+heap_sort::heap_sort()
     : m_data_len(0), m_data_size(0), m_array(NULL), m_is_build_heap(false) {}
 
-HeapSort::HeapSort(int array[], int len)
+heap_sort::heap_sort(int array[], int len)
     : m_data_len(len), m_data_size(len), m_array(NULL), m_is_build_heap(false) {
     // m_array数组的0下标没有使用，下标从1开始使用，所以要多申请1个int元素空间
     m_array = new int[len + 1];
@@ -12,13 +12,13 @@ HeapSort::HeapSort(int array[], int len)
     }
 }
 
-HeapSort::~HeapSort() {
+heap_sort::~heap_sort() {
     if (m_array != NULL) {
         delete[] m_array;
     }
 }
 
-void HeapSort::reset(int len) {
+void heap_sort::reset(int len) {
     if (m_array != NULL) {
         delete[] m_array;
     }
@@ -29,13 +29,13 @@ void HeapSort::reset(int len) {
     memset(m_array, 0, (len + 1) * sizeof(int));
 }
 
-void HeapSort::get_data(int array[], int len) {
+void heap_sort::get_data(int array[], int len) {
     for (int i = 0; i < len && i <= m_data_len; i++) {
         array[i] = m_array[i + 1];
     }
 }
 
-void HeapSort::heap_sort() {
+void heap_sort::sort() {
     if (m_data_size <= 1) {
         return;
     }
@@ -58,7 +58,7 @@ void HeapSort::heap_sort() {
     }
 }
 
-bool HeapSort::heap_maxinum(int& n) {
+bool heap_sort::heap_maxinum(int& n) {
     if (m_data_size <= 0) {
         return false;
     }
@@ -69,7 +69,7 @@ bool HeapSort::heap_maxinum(int& n) {
     return true;
 }
 
-bool HeapSort::heap_extract_max(int& n) {
+bool heap_sort::heap_extract_max(int& n) {
     if (m_data_size <= 0) {
         return false;
     }
@@ -85,7 +85,7 @@ bool HeapSort::heap_extract_max(int& n) {
     return true;
 }
 
-bool HeapSort::heap_increase_key(int i, int key) {
+bool heap_sort::heap_increase_key(int i, int key) {
     if (i < 1 || m_data_size <= 0 || key < m_array[i]) {
         return false;
     }
@@ -104,7 +104,7 @@ bool HeapSort::heap_increase_key(int i, int key) {
     return true;
 }
 
-bool HeapSort::max_heap_insert(int key) {
+bool heap_sort::max_heap_insert(int key) {
     if (m_data_size >= m_data_len) {
         return false;
     }
@@ -127,7 +127,7 @@ bool HeapSort::max_heap_insert(int key) {
     return true;
 }
 
-void HeapSort::build_max_heap(int array[], int len) {
+void heap_sort::build_max_heap(int array[], int len) {
     log("build_max_heap len: %d\n", len);
     m_is_build_heap = true;
     for (int i = (len / 2); i >= 1; i--) {
@@ -136,7 +136,7 @@ void HeapSort::build_max_heap(int array[], int len) {
 }
 
 // 堆化，从根结点到子结点。
-void HeapSort::max_heapify(int array[], int size, int i) {
+void heap_sort::max_heapify(int array[], int size, int i) {
     int largest = i;
     int l = left(i);
     int r = right(i);

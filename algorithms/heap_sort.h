@@ -3,17 +3,17 @@
 
 #include "common.h"
 
-class HeapSort {
+class heap_sort {
    public:
-    HeapSort();
-    HeapSort(int array[], int len);
-    virtual ~HeapSort();
+    heap_sort();
+    heap_sort(int array[], int len);
+    virtual ~heap_sort();
     // 重置堆排序数据
     void reset(int len);
     // 导出数据
     void get_data(int array[], int len);
     // 堆排序
-    void heap_sort();
+    void sort();
     // 获取堆顶元素
     bool heap_maxinum(int& n);
     // 获取并删除堆顶元素
