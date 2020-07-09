@@ -1,22 +1,26 @@
 /*
  * brew install cryptopp / yum install cryptopp
- * g++ -std='c++11' test_encryption.cpp -lcryptopp -o test_encryption && ./test_encryption  
+ * g++ -std='c++11' test_encryption.cpp -lcryptopp -o test_encryption && ./test_encryption
  */
 
 #include <cryptopp/gzip.h>
 
 #include <iostream>
 
+#if defined(CRYPTOPP_NO_GLOBAL_BYTE)
+using CryptoPP::byte;
+#endif
+
 bool gzip(const std::string& src, std::string& dst) {
     try {
         CryptoPP::Gzip zip;
-        zip.Put((CryptoPP::byte*)src.c_str(), src.size());
+        zip.Put((byte*)src.c_str(), src.size());
         zip.MessageEnd();
 
         CryptoPP::word64 avail = zip.MaxRetrievable();
         if (avail) {
             dst.resize(avail);
-            zip.Get((CryptoPP::byte*)&dst[0], dst.size());
+            zip.Get((byte*)&dst[0], dst.size());
         }
     } catch (CryptoPP::InvalidDataFormat& e) {
         std::cout << e.GetWhat() << std::endl;
@@ -28,12 +32,12 @@ bool gzip(const std::string& src, std::string& dst) {
 bool ungzip(const std::string& src, std::string& dst) {
     try {
         CryptoPP::Gunzip zip;
-        zip.Put((CryptoPP::byte*)src.c_str(), src.size());
+        zip.Put((byte*)src.c_str(), src.size());
         zip.MessageEnd();
         CryptoPP::word64 avail = zip.MaxRetrievable();
         if (avail) {
             dst.resize(avail);
-            zip.Get((CryptoPP::byte*)&dst[0], dst.size());
+            zip.Get((byte*)&dst[0], dst.size());
         }
     } catch (CryptoPP::InvalidDataFormat& e) {
         std::cout << e.GetWhat() << std::endl;
