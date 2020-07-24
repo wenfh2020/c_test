@@ -1,11 +1,13 @@
-
 /* wenfh2020 / 2020-07-08
- * g++ -std='c++11' msg.pb.cc test_proto.cpp  -lprotobuf -o tproto && ./tproto 
+ *
+ * protoc -I. --cpp_out=. msg.proto http.proto 
+ * g++ -std='c++11' http.pb.cc msg.pb.cc test_proto.cpp  -lprotobuf -o tproto && ./tproto 
+ * 
  */
 
 #include <iostream>
-#include <string>
 
+#include "http.pb.h"
 #include "msg.pb.h"
 
 int main(int argc, char** argv) {
@@ -24,5 +26,8 @@ int main(int argc, char** argv) {
     rsp->set_code(111);
 
     std::cout << body.SerializePartialAsString() << std::endl;
+
+    HttpMsg msg;
+    msg.set_path("/kim/im/user/");
     return 0;
 }
