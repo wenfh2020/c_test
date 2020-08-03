@@ -14,6 +14,7 @@ long long mstime(void) {
     return mst;
 }
 
+// 微秒
 long long ustime() {
     struct timeval tv;
     long long ust;
@@ -24,6 +25,13 @@ long long ustime() {
     return ust;
 }
 
+// 秒（double 精度）
+double time_now() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return ((tv).tv_sec + (tv).tv_usec * 1e-6);
+}
+
 int main(int argc, char** argv) {
     long long start, end, val;
 
@@ -32,8 +40,8 @@ int main(int argc, char** argv) {
     end = mstime();
 
     std::cout << "start: " << start << std::endl;
-    std::cout << "end: " << end << std::endl;
-    std::cout << "val: " << end - start << std::endl;
+    std::cout << "end:   " << end << std::endl;
+    std::cout << "val:   " << end - start << std::endl;
 
     std::cout << "------" << std::endl;
 
@@ -42,7 +50,18 @@ int main(int argc, char** argv) {
     end = ustime();
 
     std::cout << "start: " << start << std::endl;
-    std::cout << "end: " << end << std::endl;
-    std::cout << "val: " << end - start << std::endl;
+    std::cout << "end:   " << end << std::endl;
+    std::cout << "val:   " << end - start << std::endl;
+
+    std::cout << "------" << std::endl;
+
+    struct timeval tv;
+    long long mst;
+    gettimeofday(&tv, NULL);
+    std::cout << "secs:  " << tv.tv_sec << std::endl;
+    std::cout << "usecs: " << tv.tv_usec << std::endl;
+
+    std::cout << "------" << std::endl;
+    std::cout << "secs:  " << time_now() << std::endl;
     return 0;
 }
