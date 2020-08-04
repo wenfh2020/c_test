@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     long long start, end, val;
 
     start = mstime();
-    sleep(3);
+    sleep(1);
     end = mstime();
 
     std::cout << "start: " << start << std::endl;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     std::cout << "------" << std::endl;
 
     start = ustime();
-    sleep(3);
+    sleep(1);
     end = ustime();
 
     std::cout << "start: " << start << std::endl;
@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
     std::cout << "usecs: " << tv.tv_usec << std::endl;
 
     std::cout << "------" << std::endl;
+
     std::cout << "secs:  " << time_now() << std::endl;
     return 0;
 }
