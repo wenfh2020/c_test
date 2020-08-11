@@ -1,6 +1,6 @@
 /*
  * brew install cryptopp / yum install cryptopp
- * g++ -std='c++11' test_encryption.cpp -lcryptopp -o test_encryption && ./test_encryption
+ * g++ -std='c++11' test_cryptopp.cpp -lcryptopp -o encry && ./encry
  */
 
 #include <cryptopp/gzip.h>
