@@ -1,4 +1,4 @@
-/* refer: http://www.martinbroadhurst.com/how-to-split-a-string-s-c.html
+/* refer:  http://www.martinbroadhurst.com/how-to-split-a-string-s-c.html
  * script: g++ -std='c++11' test_split_strings.cpp -o split && ./split */
 
 #include <iostream>
@@ -25,30 +25,24 @@ void split(const std::string& s, std::vector<std::string>& vec, const std::strin
 }
 
 int main() {
-    std::vector<std::string> vec;
-
     const char* seq = ",";
-    const char* s = ",127.0.0.1:6379,  127.0.0.1:6378,  127.0.0.1:6377,3 ";
+    const char* s = ",127.0.0.1:6379,  127.0.0.1:6378 ,  127.0.0.1:6377 ,3 ";
     // const char* seq = " ";
     // const char* s = "127.0.0.1:6379    127.0.0.1:63178   127.0.0.1:65300   1";
 
-    // std::string str;
-    // printf("%d\n", str.find_first_not_of(","));
-    // return 0;
+    std::vector<std::string> vec;
 
     split(s, vec, seq, false);
     for (auto& s : vec) {
-        std::cout << "len: " << s.length()
-                  << ", data: " << s << std::endl;
+        printf("len: %lu, data: %s\n", s.length(), s.c_str());
     }
 
-    std::cout << "----" << std::endl;
-
     vec.clear();
+    printf("---- trim blank ----\n");
+
     split(s, vec, seq, true);
     for (auto& s : vec) {
-        std::cout << "len: " << s.length()
-                  << ", data: " << s << std::endl;
+        printf("len: %lu, data: %s\n", s.length(), s.c_str());
     }
     return 0;
 }
