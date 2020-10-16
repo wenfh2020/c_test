@@ -33,16 +33,16 @@ int main() {
     std::vector<std::string> vec;
 
     split(s, vec, seq, false);
-    for (auto& s : vec) {
-        printf("len: %lu, data: %s\n", s.length(), s.c_str());
+    for (auto& v : vec) {
+        printf("len: %lu, data: %s\n", v.length(), v.c_str());
     }
 
     vec.clear();
     printf("---- trim blank ----\n");
 
     split(s, vec, seq, true);
-    for (auto& s : vec) {
-        printf("len: %lu, data: %s\n", s.length(), s.c_str());
+    for (auto& v : vec) {
+        printf("len: %lu, data: %s\n", v.length(), v.c_str());
     }
     return 0;
 }
