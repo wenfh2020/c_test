@@ -1,7 +1,7 @@
 /*
  * wenfh2020.com / 2020-07-30
- * g++ -std='c++11' -g test_jemalloc.cpp  -o tjemalloc && ./tjemalloc
- * g++ -std='c++11' -g test_jemalloc.cpp  -o tjemalloc -DUSE_JEMALLOC -ljemalloc && ./tjemalloc
+ * g++ -std='c++11' -g test_jemalloc.cpp -o tjemalloc && ./tjemalloc
+ * g++ -std='c++11' -g test_jemalloc.cpp -o tjemalloc -DUSE_JEMALLOC -ljemalloc && ./tjemalloc
 */
 
 #include <stdlib.h>
@@ -29,7 +29,7 @@ int main() {
     srand((unsigned)time(NULL));
     long long begin = mstime();
     for (int i = 0; i < MALLOC_CNT; i++) {
-        int size = 1024 * 4 + rand() % 1024;
+        int size = rand() % 1024 + 4;
         char* p = (char*)malloc(size);
         memset(p, rand() % 128, size);
         free(p);
@@ -37,7 +37,7 @@ int main() {
     long long end = mstime();
 
     std::cout << "begin: " << begin << std::endl
-              << "end: " << end << std::endl
-              << "val: " << end - begin << std::endl;
+              << "end:   " << end << std::endl
+              << "val:   " << end - begin << std::endl;
     return 0;
 }
