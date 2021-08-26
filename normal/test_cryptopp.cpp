@@ -109,10 +109,6 @@ bool read_data_from_file(const std::string path, std::string& data) {
     return true;
 }
 
-/* 1. hex to string. key and iv.
- * 2. read data from file. 
- * 3. test enrypt and decrypt. */
-
 std::string char2hex(char c) {
     std::string sValue;
     static char MAPX[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
