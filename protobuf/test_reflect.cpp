@@ -1,9 +1,9 @@
 
-/* wenfh2020 / 2020-07-25
- *
+/* 
+ * wenfh2020 / 2020-07-25
+ * test reflect.
  * protoc -I. --cpp_out=. msg.proto http.proto 
  * c && g++ -std='c++11' http.pb.cc msg.pb.cc test_reflect.cpp  -lprotobuf -o trf && ./trf 
- * 
  */
 
 #include <iostream>
@@ -76,17 +76,17 @@ class Cmd {
 
     Cmd() {}
     virtual ~Cmd() {}
-    virtual Cmd::STATUS execute(Request* req) = 0;
+    virtual Cmd::STATUS execute(std::shared_ptr<Request> req) = 0;
     virtual Cmd::STATUS call_back(HttpMsg* msg) = 0;
 };
 
-#define BEGIN_HTTP_MAP()                                \
-   public:                                              \
-    virtual Cmd::STATUS process_message(Request* req) { \
-        const HttpMsg* msg = req->get_http_msg();       \
-        if (msg == nullptr) {                           \
-            return Cmd::STATUS::ERROR;                  \
-        }                                               \
+#define BEGIN_HTTP_MAP()                                                \
+   public:                                                              \
+    virtual Cmd::STATUS process_message(std::shared_ptr<Request> req) { \
+        const HttpMsg* msg = req->get_http_msg();                       \
+        if (msg == nullptr) {                                           \
+            return Cmd::STATUS::ERROR;                                  \
+        }                                                               \
         std::string path = msg->path();
 
 #define HTTP_HANDLER(_path, _cmd)             \
@@ -120,7 +120,7 @@ class CmdHello : public Cmd {
         std::cout << "delete cmd hello" << std::endl;
     }
 
-    virtual Cmd::STATUS execute(Request* req) override {
+    virtual Cmd::STATUS execute(std::shared_ptr<Request> req) override {
         std::cout << "hello world!!!" << std::endl;
         return Cmd::STATUS::OK;
     }
@@ -133,14 +133,14 @@ class CmdHello : public Cmd {
 #define REGISTER_FUNC(path, func) \
     m_cmd_funcs[path] = &func;
 
-#define CMD_FUNC(func, cmd_name)              \
-    Cmd::STATUS func(Request* req) {          \
-        cmd_name* p = new cmd_name;           \
-        Cmd::STATUS status = p->execute(req); \
-        if (status == Cmd::STATUS::RUNNING) { \
-        }                                     \
-        delete p;                             \
-        return status;                        \
+#define CMD_FUNC(func, cmd_name)                     \
+    Cmd::STATUS func(std::shared_ptr<Request> req) { \
+        cmd_name* p = new cmd_name;                  \
+        Cmd::STATUS status = p->execute(req);        \
+        if (status == Cmd::STATUS::RUNNING) {        \
+        }                                            \
+        delete p;                                    \
+        return status;                               \
     }
 
 class Module {
@@ -152,7 +152,7 @@ class Module {
         }
     }
 
-    virtual Cmd::STATUS process_message(Request* req) {
+    virtual Cmd::STATUS process_message(std::shared_ptr<Request> req) {
         return Cmd::STATUS::UNKOWN;
     }
 
@@ -165,49 +165,48 @@ class Module {
 
 // CMD_FUNC(func_cmd_hello, CmdHello)
 
-#define BEGIN_HTTP_MAP2(class_name)                        \
-    typedef Cmd::STATUS (class_name::*cmd_func)(Request*); \
-    virtual Cmd::STATUS process_message(Request* req) {    \
-        const HttpMsg* msg = req->get_http_msg();          \
-        if (msg == nullptr) {                              \
-            return Cmd::STATUS::ERROR;                     \
-        }                                                  \
-        auto it = m_cmd_funcs.find(msg->path());           \
-        if (it == m_cmd_funcs.end()) {                     \
-            return Cmd::STATUS::UNKOWN;                    \
-        }                                                  \
-        return (this->*(it->second))(req);                 \
-    }                                                      \
-    void init() {
-#define HTTP_HANDLER2(path, func) \
-    m_cmd_funcs[path] = &func;
-
-#define END_HTTP_MAP2() \
-    }                   \
-                        \
-   protected:           \
+#define REGISTER_HANDLER(class_name)                                       \
+   public:                                                                 \
+    typedef Cmd::STATUS (class_name::*cmd_func)(std::shared_ptr<Request>); \
+    virtual Cmd::STATUS process_message(std::shared_ptr<Request> req) {    \
+        const HttpMsg* msg = req->get_http_msg();                          \
+        if (msg == nullptr) {                                              \
+            return Cmd::STATUS::ERROR;                                     \
+        }                                                                  \
+        auto it = m_cmd_funcs.find(msg->path());                           \
+        if (it == m_cmd_funcs.end()) {                                     \
+            return Cmd::STATUS::UNKOWN;                                    \
+        }                                                                  \
+        return (this->*(it->second))(req);                                 \
+    }                                                                      \
+                                                                           \
+   protected:                                                              \
     std::map<std::string, cmd_func> m_cmd_funcs;
 
-class MoudleUser : public Module {
-   public:
-    BEGIN_HTTP_MAP2(MoudleUser)
-    HTTP_HANDLER2("/kim/im/user/", MoudleUser::func_cmd_hello)
-    END_HTTP_MAP2()
+#define REGISTER_HANDLE_FUNC(path, func) \
+    m_cmd_funcs[path] = &func;
 
+class MoudleUser : public Module {
+    REGISTER_HANDLER(MoudleUser)
    public:
-    Cmd::STATUS func_cmd_hello(Request* req) {
+    void init() {
+        REGISTER_HANDLE_FUNC("/kim/im/user/", MoudleUser::func_cmd_hello);
+    }
+
+   private:
+    Cmd::STATUS func_cmd_hello(std::shared_ptr<Request> req) {
         std::cout << "hello world" << std::endl;
         return Cmd::STATUS::OK;
     }
 };
 
 int main(int argc, char** argv) {
-    Request req;
-    HttpMsg* msg = req.get_http_msg();
+    std::shared_ptr<Request> req = std::make_shared<Request>();
+    HttpMsg* msg = req->get_http_msg();
     msg->set_path("/kim/im/user/");
     MoudleUser* m = new MoudleUser();
     m->init();
-    m->process_message(&req);
+    m->process_message(req);
     std::map<std::string, Module*> modules;
     modules["xxxxso"] = m;
     for (const auto& it : modules) {

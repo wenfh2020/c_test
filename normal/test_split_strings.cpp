@@ -25,6 +25,12 @@ void split(const std::string& s, std::vector<std::string>& vec, const std::strin
 }
 
 int main() {
+    std::string a = std::to_string(1111111111111111111);
+    std::string test = "123";
+    printf("%s, %d, %s\n", a.c_str(), (int)test.find_last_not_of(" "),
+           test.erase(test.find_last_not_of(" ") + 1).c_str());
+    return 0;
+
     const char* seq = ",";
     const char* s = ",127.0.0.1:6379,  127.0.0.1:6378 ,  127.0.0.1:6377 ,3 ";
     // const char* seq = " ";
@@ -44,5 +50,6 @@ int main() {
     for (auto& v : vec) {
         printf("len: %lu, data: %s\n", v.length(), v.c_str());
     }
+
     return 0;
 }

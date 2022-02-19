@@ -32,7 +32,26 @@ double time_now() {
     return ((tv).tv_sec + (tv).tv_usec * 1e-6);
 }
 
+void format() {
+    int off;
+    time_t t;
+    char buf[64];
+    struct tm* tm;
+    struct timeval tv;
+
+    t = time(NULL);
+    tm = localtime(&t);
+    gettimeofday(&tv, NULL);
+    off = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", tm);
+    std::cout << "[" << buf << "]" << std::endl;
+
+    snprintf(buf + off, sizeof(buf) - off, ".%03d", (int)tv.tv_usec / 1000);
+    std::cout << "[" << buf << "]" << std::endl;
+}
+
 int main(int argc, char** argv) {
+    format();
+    return 0;
     long long start, end, val;
 
     start = mstime();

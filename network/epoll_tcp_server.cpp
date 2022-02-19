@@ -25,9 +25,9 @@
 #define EVENTS_SIZE 1024     /* event's array size. */
 
 /* log. */
-bool log_data(bool is_err, int file_line, const char *func, const char *fmt, ...);
-#define LOG(args...) log_data(false, __LINE__, __FUNCTION__, ##args)
-#define LOG_SYS_ERR(args...) log_data(true, __LINE__, __FUNCTION__, ##args)
+int log_data(int is_err, int file_line, const char *func, const char *fmt, ...);
+#define LOG(args...) log_data(0, __LINE__, __FUNCTION__, ##args)
+#define LOG_SYS_ERR(args...) log_data(1, __LINE__, __FUNCTION__, ##args)
 
 int g_epfd = -1;      /* epoll file descriptor. */
 int g_listen_fd = -1; /* listen socket's file descriptor. */
@@ -56,7 +56,7 @@ int write_data(int fd);         /* write data to client. */
 int accept_data(int listen_fd); /* accept a new client. */
 int handle_data(int fd);        /* hanlde user's logic. */
 
-bool handle_write_events(int fd);
+int handle_write_events(int fd);
 
 int main(int argc, char **argv) {
     int port = SERVER_PORT;
@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
 int init_server(const char *ip, int port) {
     int reuse = 1;
     struct epoll_event ee;
+    struct sockaddr_in sa;
 
     /* create socket. */
     g_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,12 +88,12 @@ int init_server(const char *ip, int port) {
     LOG("create listen socket, fd: %d.", g_listen_fd);
 
     /* bind. */
-    struct sockaddr_in sa;
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
-    sa.sin_addr.s_addr = (ip == NULL || !strlen(ip)) ? htonl(INADDR_ANY) : inet_addr(ip);
+    sa.sin_addr.s_addr =
+        (ip == NULL || !strlen(ip)) ? htonl(INADDR_ANY) : inet_addr(ip);
 
-    ::setsockopt(g_listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    setsockopt(g_listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
     bind(g_listen_fd, (struct sockaddr *)&sa, sizeof(sa));
 
     /* listen */
@@ -119,12 +120,12 @@ int init_server(const char *ip, int port) {
     ee.data.fd = g_listen_fd;
     ee.events = EPOLLIN;
     if (epoll_ctl(g_epfd, EPOLL_CTL_ADD, g_listen_fd, &ee) < 0) {
-        LOG_SYS_ERR("epoll_ctl add event: EPOLLIN failed! fd: %d.",
+        LOG_SYS_ERR("epoll_ctl add event: <EPOLLIN> failed! fd: %d.",
                     g_listen_fd);
         close(g_listen_fd);
         return -1;
     }
-    LOG("epoll_ctl add event: EPOLLIN, fd: %d.", g_listen_fd);
+    LOG("epoll_ctl add event: <EPOLLIN>, fd: %d.", g_listen_fd);
 
     LOG("server start now, ip: %s, port: %d.",
         (ip == NULL || !strlen(ip)) ? "127.0.0.1" : ip, port);
@@ -132,18 +133,18 @@ int init_server(const char *ip, int port) {
 }
 
 void run_server() {
-    int fd;
+    int i, fd;
     client_t *c;
     struct epoll_event *ees;
 
     memset(g_clients, 0, MAX_CLIENT_CNT);
-    ees = (epoll_event *)calloc(EVENTS_SIZE, sizeof(epoll_event));
+    ees = (struct epoll_event *)calloc(EVENTS_SIZE, sizeof(struct epoll_event));
 
     while (1) {
         int n = epoll_wait(g_epfd, ees, EVENTS_SIZE, 5 * 1000);
-        for (int i = 0; i < n; i++) {
+        for (i = 0; i < n; i++) {
             fd = ees[i].data.fd;
-            if (g_listen_fd == fd) {
+            if (fd == g_listen_fd) {
                 fd = accept_data(g_listen_fd);
                 if (fd < 0) {
                     continue;
@@ -152,7 +153,8 @@ void run_server() {
                 add_client(fd, EPOLLIN);
             } else {
                 if (!(ees[i].events & (EPOLLIN | EPOLLOUT))) {
-                    LOG_SYS_ERR("invalid event! fd: %d, events: %d", fd, ees[i].events);
+                    LOG_SYS_ERR("invalid event! fd: %d, events: %d",
+                                fd, ees[i].events);
                     del_client(fd);
                     continue;
                 }
@@ -171,9 +173,11 @@ void run_server() {
                         del_client(fd);
                         continue;
                     } else if (ret < 0) {
-                        LOG_SYS_ERR("read from fd: %d failed!", c->fd);
-                        del_client(fd);
-                        continue;
+                        if (errno != EAGAIN && errno != EINTR) {
+                            LOG_SYS_ERR("read from fd: %d failed!", c->fd);
+                            del_client(fd);
+                            continue;
+                        }
                     }
                 }
 
@@ -188,9 +192,10 @@ void run_server() {
                             continue;
                         }
                     }
-
-                    handle_write_events(fd);
                 }
+
+                /* check written buffer, then epoll_ctl EPOLLOUT. */
+                handle_write_events(fd);
             }
         }
     }
@@ -215,7 +220,6 @@ int handle_data(int fd) {
         }
     }
 
-    handle_write_events(fd);
     return 1;
 }
 
@@ -261,9 +265,9 @@ int del_client(int fd) {
 
     if (c->events & (EPOLLIN | EPOLLOUT)) {
         if (epoll_ctl(g_epfd, EPOLL_CTL_DEL, fd, NULL) < 0) {
-            LOG_SYS_ERR("epoll_ctl delete events failed! fd: %d.", fd);
+            LOG_SYS_ERR("epoll_ctl <delete events> failed! fd: %d.", fd);
         }
-        LOG("epoll_ctl delete events, fd: %d.", fd);
+        LOG("epoll_ctl <delete events>, fd: %d.", fd);
     }
 
     close(fd);
@@ -300,6 +304,7 @@ int accept_data(int listen_fd) {
     LOG("accept new client, fd: %d, ip: %s, port: %d", fd, ip, port);
 
     if (set_nonblocking(fd) < 0) {
+        close(fd);
         return -1;
     }
     LOG("set socket nonblocking. fd: %d.", fd);
@@ -308,19 +313,19 @@ int accept_data(int listen_fd) {
     ee.data.fd = fd;
     ee.events = EPOLLIN;
     if (epoll_ctl(g_epfd, EPOLL_CTL_ADD, fd, &ee) < 0) {
-        LOG_SYS_ERR("epoll_ctl add event: EPOLLIN failed! fd: %d.", fd);
+        LOG_SYS_ERR("epoll_ctl add event: <EPOLLIN> failed! fd: %d.", fd);
         close(fd);
         return -1;
     }
 
-    LOG("epoll_ctl add event: EPOLLIN, fd: %d.", fd);
+    LOG("epoll_ctl add event: <EPOLLIN>, fd: %d.", fd);
     return fd;
 }
 
 /* read data from network. */
 int read_data(int fd) {
-    int rlen;
     client_t *c;
+    int rlen;
     char rbuf[1024];
     memset(rbuf, 0, 1024);
 
@@ -336,17 +341,15 @@ int read_data(int fd) {
         } else if (rlen < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 // LOG("for async, try to read next time! fd: %d.\n", c->fd);
-                return 1;
             } else {
-                return -1;
+                LOG_SYS_ERR("read data failed! fd: %d.", fd);
             }
+            return -1;
         } else {
             /* save data to read buffer. */
             memcpy(c->rbuf + c->rlen, rbuf, rlen);
             c->rlen += rlen;
-            LOG("=======>");
             LOG("fd: %d, read len: %d, buffer: %s", c->fd, rlen, rbuf);
-            LOG("=======");
         }
     }
 
@@ -370,7 +373,7 @@ int write_data(int fd) {
     /* limit write len for EPOLLOUT test. */
     len = c->wlen < 8 ? c->wlen : 8;
 
-    /* write. */
+    /* write data to client. */
     wlen = write(c->fd, c->wbuf, len);
     if (wlen >= 0) {
         /* truncate data. */
@@ -389,7 +392,7 @@ int write_data(int fd) {
     }
 }
 
-bool handle_write_events(int fd) {
+int handle_write_events(int fd) {
     int op;
     client_t *c;
     struct epoll_event ee;
@@ -397,7 +400,7 @@ bool handle_write_events(int fd) {
     c = g_clients[fd];
     if (c == NULL) {
         LOG("invalid client, fd: %d.", fd);
-        return false;
+        return -1;
     }
 
     if (c->wlen > 0) {
@@ -408,12 +411,13 @@ bool handle_write_events(int fd) {
             ee.events |= EPOLLOUT;
             op = (!c->events) ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
             if (epoll_ctl(g_epfd, op, c->fd, &ee) < 0) {
-                LOG_SYS_ERR("epoll_ctl add event: EPOLLOUT failed! fd: %d.", c->fd);
-                return false;
+                LOG_SYS_ERR("epoll_ctl add event: <EPOLLOUT> failed! fd: %d.",
+                            c->fd);
+                return -1;
             }
             c->events = ee.events;
-            LOG("epoll_ctl add event: EPOLLOUT, fd: %d.", fd);
-            return true;
+            LOG("epoll_ctl add event: <EPOLLOUT>, fd: %d.", fd);
+            return 1;
         }
     } else {
         if (c->events & EPOLLOUT) {
@@ -423,19 +427,20 @@ bool handle_write_events(int fd) {
             ee.events &= ~EPOLLOUT;
             op = (!c->events) ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
             if (epoll_ctl(g_epfd, op, c->fd, &ee) < 0) {
-                LOG_SYS_ERR("epoll_ctl delete event: EPOLLOUT failed! fd: %d.", c->fd);
-                return false;
+                LOG_SYS_ERR("epoll_ctl delete event: <EPOLLOUT> failed! fd: %d.",
+                            c->fd);
+                return -1;
             }
             c->events = ee.events;
-            LOG("epoll_ctl delete event: EPOLLOUT, fd: %d.", fd);
-            return true;
+            LOG("epoll_ctl delete event: <EPOLLOUT>, fd: %d.", fd);
+            return 1;
         }
     }
 
-    return true;
+    return 1;
 }
 
-bool log_data(bool is_err, int file_line, const char *func, const char *fmt, ...) {
+int log_data(int is_err, int file_line, const char *func, const char *fmt, ...) {
     int off;
     va_list ap;
     char buf[64];
@@ -459,5 +464,5 @@ bool log_data(bool is_err, int file_line, const char *func, const char *fmt, ...
         printf("%s[%s:%d] %s\n", buf, func, file_line, msg);
     }
 
-    return true;
+    return 1;
 }

@@ -2,28 +2,48 @@
 
 class A {
    public:
-    A() {}
-    virtual ~A() { std::cout << "~A()" << std::endl; }
-    virtual void func() { std::cout << "A func" << std::endl; }
+    A() {
+        std::cout << "A::A()" << std::endl;
+        func();
+    }
+    virtual ~A() { std::cout << "A::~A()" << std::endl; }
+    virtual void func() { std::cout << "A::func" << std::endl; }
+    virtual void func2() { std::cout << "A::func2" << std::endl; }
 };
 
 class B : public A {
    public:
-    B() {}
-    virtual ~B() { std::cout << "~B()" << std::endl; }
-    virtual void func() { std::cout << "B func" << std::endl; }
+    B() { std::cout << "B::B()" << std::endl; }
+    ~B() { std::cout << "B::~B()" << std::endl; }
+    virtual void func() { std::cout << "B::func" << std::endl; }
+    virtual void func2() { std::cout << "B::func2" << std::endl; }
 };
 
-class C : public B {
+class K {
    public:
-    C() {}
-    virtual ~C() { std::cout << "~C()" << std::endl; }
-    virtual void func() { std::cout << "C func" << std::endl; }
+    K() { std::cout << "K::K()" << std::endl; }
+    virtual ~K() { std::cout << "K::~K()" << std::endl; }
+    virtual void func() { std::cout << "K::func" << std::endl; }
+    virtual void func2() { std::cout << "K::func2" << std::endl; }
+};
+
+class C : public B, public K {
+   public:
+    C() { std::cout << "C::C()" << std::endl; }
+    virtual ~C() { std::cout << "C::~C()" << std::endl; }
+    virtual void func() { std::cout << "C::func" << std::endl; }
+    virtual void func2() { std::cout << "C::func" << std::endl; }
 };
 
 int main(int argc, char** argv) {
-    B* p = new C;
+    std::cout << "sizeof(C): " << sizeof(C) << std::endl;
+    A* p = new C;
+    // C c;
+    // A* p = (A*)(&c);
     p->func();
     delete p;
+
+    // (A(c)).func();
+
     return 0;
 }

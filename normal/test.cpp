@@ -1,11 +1,13 @@
-#include <stdio.h>
+/* g++ -std=c++11 test.cpp -o test && ./test */
+#include <iostream>
+#include <list>
+#include <string>
+#include <utility>
 
-volatile int a = 0;
-volatile int b = 1;
+int main() {
+    std::string s("hello");
+    std::list<std::string> ls;
 
-const char* p = "hello";
-
-int main(int args, char** argv) {
-    b = a;
+    ls.push_back(s);
     return 0;
 }

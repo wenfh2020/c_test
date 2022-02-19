@@ -26,8 +26,5 @@ int main(int argc, char** argv) {
     rsp->set_code(111);
 
     std::cout << body.SerializePartialAsString() << std::endl;
-
-    HttpMsg msg;
-    msg.set_path("/kim/im/user/");
     return 0;
 }
