@@ -1,4 +1,5 @@
 // refer: https://en.cppreference.com/w/cpp/thread/thread/join
+// g++ -std='c++11' a.cpp b.cpp test.cpp -lpthread -o t  && ./t
 #include "a.h"
 #include "b.h"
 
