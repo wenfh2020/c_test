@@ -63,7 +63,7 @@ class BioThread {
         }
         m_thread = thread;
         m_stop_thread = false;
-        rturn true;
+        return true;
     }
 
     void stop() {

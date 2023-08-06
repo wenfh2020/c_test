@@ -18,7 +18,7 @@ int main() {
 
     int index = 0;
     while (1) {
-        if (index == 10) {
+        if (index == 5) {
             index = -1;
         }
         th.addTask(index++);
