@@ -30,7 +30,9 @@ class Lru {
     virtual ~Lru() {}
     bool insert(const std::string& key, const std::string& value);
     bool update(const std::string& key, const std::string& value);
+    bool remove(const std::string& key);
     std::shared_ptr<Data> get_random();
+    std::shared_ptr<Data> get_data(const std::string& k);
     bool pop();
     bool check();
 

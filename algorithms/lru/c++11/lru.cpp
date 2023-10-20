@@ -85,12 +85,29 @@ bool Lru::check() {
     return true;
 }
 
+bool Lru::remove(const std::string& key) {
+    auto it = m_map.find(key);
+    if (it == m_map.end()) {
+        return false;
+    }
+    m_map.erase(key);
+    m_list.erase(it->second);
+    return true;
+}
+
+std::shared_ptr<Data> Lru::get_data(const std::string& k) {
+    auto it = m_map.find(k);
+    if (it != m_map.end()) {
+        return *(it->second);
+    }
+    return nullptr;
+}
+
 //////////////////////////////////////////////////////////////////
 
 int main() {
     Lru lru;
     int i = 0;
-
     srand((unsigned)time(NULL));
 
     while (i++ <= 10) {
