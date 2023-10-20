@@ -1,5 +1,4 @@
-#ifndef _LRU_H_
-#define _LRU_H_
+#pragma once
 
 #include <iostream>
 #include <list>
@@ -28,9 +27,9 @@ class Lru {
    public:
     Lru() {}
     virtual ~Lru() {}
-    bool insert(const std::string& key, const std::string& value);
-    bool update(const std::string& key, const std::string& value);
-    bool remove(const std::string& key);
+    bool insert(const std::string& k, const std::string& v);
+    bool update(const std::string& k, const std::string& v);
+    bool remove(const std::string& k);
     std::shared_ptr<Data> get_random();
     std::shared_ptr<Data> get_data(const std::string& k);
     bool pop();
@@ -40,5 +39,3 @@ class Lru {
     std::list<std::shared_ptr<Data>> m_list;
     std::unordered_map<std::string, std::list<std::shared_ptr<Data>>::iterator> m_map;
 };
-
-#endif  //_LRU_H_
